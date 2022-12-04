@@ -2,6 +2,8 @@ package v1
 
 import (
 	"Notion-Forms/pkg/notion"
+	"Notion-Forms/pkg/notion/models"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -29,6 +31,21 @@ func ListProjects(c *gin.Context) {
 func ListDatabase(c *gin.Context) {
 	id := c.Param("id")
 	project, err := notion.ListDatabase(id)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
+		return
+	}
+	c.JSON(http.StatusOK, project)
+}
+
+func CreateRecord(c *gin.Context) {
+	databaseId := c.Param("id")
+	var recordRequest []models.RecordRequest
+	if error := c.BindJSON(&recordRequest); error != nil {
+		fmt.Println(error)
+		return
+	}
+	project, err := notion.CreateRecord(databaseId, recordRequest)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
 		return

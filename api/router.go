@@ -17,6 +17,10 @@ func Router() {
 		{
 			notionDatabase.GET("/:id", apiV1.ListDatabase)
 		}
+		notionRecords := v1.Group("/records")
+		{
+			notionRecords.POST("/:id", apiV1.CreateRecord)
+		}
 	}
 	r.Run(":3000")
 }
