@@ -110,17 +110,15 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 				return notion.Page{}, errors.New("can't cast request.Value to string")
 			}
 			var richTextArray []notion.RichText
-			richText := notion.RichText{
+			richTextArray = append(richTextArray, notion.RichText{
 				Type: "text",
 				Text: &notion.Text{
 					Content: value,
 				},
-			}
-			richTextArray = append(richTextArray, richText)
-			properties = map[string]notion.Property{
-				request.Name: notion.TitleProperty{
-					Title: richTextArray,
-				},
+				PlainText: value,
+			})
+			properties[request.Name] = notion.RichTextProperty{
+				RichText: richTextArray,
 			}
 			break
 		case "number":
@@ -132,10 +130,8 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			if err != nil {
 				return notion.Page{}, err
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.NumberProperty{
-					Number: number,
-				},
+			properties[request.Name] = notion.NumberProperty{
+				Number: number,
 			}
 			break
 		case "select":
@@ -143,11 +139,10 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			if !status {
 				return notion.Page{}, errors.New("can't cast request.Value to string")
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.SelectProperty{
-					Select: notion.Option{
-						ID: notion.PropertyID(value),
-					},
+			properties[request.Name] = notion.SelectProperty{
+				Select: notion.Option{
+					ID:   notion.PropertyID(value),
+					Name: "undefined",
 				},
 			}
 			break
@@ -159,16 +154,21 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			var options []notion.Option
 			for _, option := range optionsArray {
 				options = append(options, notion.Option{
-					ID: notion.PropertyID(option),
+					ID:   notion.PropertyID(option),
+					Name: "undefined",
 				})
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.MultiSelectProperty{
-					MultiSelect: options,
-				},
+			properties[request.Name] = notion.MultiSelectProperty{
+				MultiSelect: options,
 			}
 			break
 		case "date":
+			var notionDateProperty = notion.DateProperty{
+				Date: &notion.DateObject{
+					Start: nil,
+					End:   nil,
+				},
+			}
 			dates, err := toStringArray(request.Value)
 			if err != nil {
 				return notion.Page{}, err
@@ -177,21 +177,16 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			if err != nil {
 				return notion.Page{}, err
 			}
+			notionDateProperty.Date.Start = (*notion.Date)(&startDate)
 			var endDate time.Time
 			if dates[1] != "" {
 				endDate, err = time.Parse(time.RFC3339, dates[1])
 				if err != nil {
 					return notion.Page{}, err
 				}
+				notionDateProperty.Date.End = (*notion.Date)(&endDate)
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.DateProperty{
-					Date: &notion.DateObject{
-						Start: (*notion.Date)(&startDate),
-						End:   (*notion.Date)(&endDate),
-					},
-				},
-			}
+			properties[request.Name] = notionDateProperty
 			break
 		case "people":
 			var users []notion.User
@@ -204,10 +199,8 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 					ID: notion.UserID(user),
 				})
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.PeopleProperty{
-					People: users,
-				},
+			properties[request.Name] = notion.PeopleProperty{
+				People: users,
 			}
 			break
 		case "files":
@@ -231,10 +224,8 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 				})
 				_ = user
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.FilesProperty{
-					Files: files,
-				},
+			properties[request.Name] = notion.FilesProperty{
+				Files: files,
 			}
 			break
 		case "checkbox":
@@ -242,10 +233,8 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			if !status {
 				return notion.Page{}, errors.New("can't cast request.Value to bool")
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.CheckboxProperty{
-					Checkbox: value,
-				},
+			properties[request.Name] = notion.CheckboxProperty{
+				Checkbox: value,
 			}
 			break
 		case "url":
@@ -253,10 +242,8 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			if !status {
 				return notion.Page{}, errors.New("can't cast request.Value to string")
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.URLProperty{
-					URL: value,
-				},
+			properties[request.Name] = notion.URLProperty{
+				URL: value,
 			}
 			break
 		case "email":
@@ -264,10 +251,8 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			if !status {
 				return notion.Page{}, errors.New("can't cast request.Value to string")
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.EmailProperty{
-					Email: value,
-				},
+			properties[request.Name] = notion.EmailProperty{
+				Email: value,
 			}
 			break
 		case "phone_number":
@@ -275,10 +260,8 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			if !status {
 				return notion.Page{}, errors.New("can't cast request.Value to string")
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.PhoneNumberProperty{
-					PhoneNumber: value,
-				},
+			properties[request.Name] = notion.PhoneNumberProperty{
+				PhoneNumber: value,
 			}
 			break
 		case "formula":
@@ -300,11 +283,10 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			if !status {
 				return notion.Page{}, errors.New("can't cast request.Value to string")
 			}
-			properties = map[string]notion.Property{
-				request.Name: notion.StatusProperty{
-					Status: notion.Status{
-						ID: notion.ObjectID(value),
-					},
+			properties[request.Name] = notion.StatusProperty{
+				Status: notion.Status{
+					ID:   notion.ObjectID(value),
+					Name: "undefined",
 				},
 			}
 			break
