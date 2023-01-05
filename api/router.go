@@ -11,15 +11,14 @@ func Router() {
 	{
 		notionPages := v1.Group("/pages")
 		{
-			notionPages.GET("/", apiV1.ListProjects)
-		}
-		notionDatabase := v1.Group("/databases")
-		{
-			notionDatabase.GET("/:id", apiV1.ListDatabase)
+			notionPages.GET("/", apiV1.ListPages)
+			notionPages.GET("/:type/:id", apiV1.ListPage)
 		}
 		notionRecords := v1.Group("/records")
 		{
-			notionRecords.POST("/:id", apiV1.CreateRecord)
+			notionRecords.POST("/:databaseId", apiV1.CreateRecord)
+			notionRecords.GET("/:databaseId/options", apiV1.GetSelectAllOptions)
+			notionRecords.GET("/:databaseId/options/:select", apiV1.GetSelectOptions)
 		}
 	}
 	r.Run(":3000")

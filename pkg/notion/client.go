@@ -1,6 +1,7 @@
 package notion
 
 import (
+	"Notion-Forms/pkg/global"
 	"Notion-Forms/pkg/helper"
 	"Notion-Forms/pkg/notion/models"
 	"context"
@@ -12,8 +13,8 @@ import (
 )
 
 var (
-	ctx    context.Context
-	client *notion.Client
+	ctx          context.Context
+	notionClient *notion.Client
 )
 
 func Client() error {
@@ -21,14 +22,14 @@ func Client() error {
 	if err != nil {
 		return err
 	}
-	//client = notion.NewClient(key)
-	client = notion.NewClient(notion.Token(key))
+	notionClient = notion.NewClient(notion.Token(key))
 	ctx = context.Background()
+	Me()
 	return nil
 }
 
 func ListAllPages(showPagesQuery bool) ([]models.SiteResponse, error) {
-	resp, err := client.Search.Do(ctx, &notion.SearchRequest{})
+	resp, err := notionClient.Search.Do(ctx, &notion.SearchRequest{})
 
 	if err != nil {
 		return nil, err
@@ -71,18 +72,23 @@ func ListAllPages(showPagesQuery bool) ([]models.SiteResponse, error) {
 }
 
 func ListDatabase(id string) (notion.Database, error) {
-	resp, err := client.Database.Get(ctx, notion.DatabaseID(id))
+	resp, err := notionClient.Database.Get(ctx, notion.DatabaseID(id))
 	if err != nil {
 		return notion.Database{}, err
 	}
 	return *resp, nil
 }
+
+func ListPage(id string) (notion.Page, error) {
+	resp, err := notionClient.Page.Get(ctx, notion.PageID(id))
+	if err != nil {
+		return notion.Page{}, err
+	}
+	return *resp, nil
+}
+
 func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Page, error) {
 	properties := map[string]notion.Property{}
-
-	//properties["name"] = notion.TitleProperty{
-	//	Title: nil,
-	//}
 
 	for _, request := range requests {
 		fmt.Println("")
@@ -265,18 +271,45 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			}
 			break
 		case "formula":
+			// 1:1-string of the formula-value -> something like this: prop("Text") -> make no sense to add this, because you can't create this plain in the frontend
 			break
 		case "relation":
+			// make no sense to add this, because you can't create this plain in the frontend
 			break
 		case "rollup":
+			// make no sense to add this, because you can't create this plain in the frontend
 			break
 		case "created_time":
+			date := time.Now()
+			properties[request.Name] = notion.DateProperty{
+				Date: &notion.DateObject{
+					Start: (*notion.Date)(&date),
+					End:   nil,
+				},
+			}
 			break
 		case "created_by":
+			var users []notion.User
+			users = append(users, notion.User{ID: notion.UserID(global.User.Id)})
+			properties[request.Name] = notion.PeopleProperty{
+				People: users,
+			}
 			break
 		case "last_edited_time":
+			date := time.Now()
+			properties[request.Name] = notion.DateProperty{
+				Date: &notion.DateObject{
+					Start: (*notion.Date)(&date),
+					End:   nil,
+				},
+			}
 			break
 		case "last_edited_by":
+			var users []notion.User
+			users = append(users, notion.User{ID: notion.UserID(global.User.Id)})
+			properties[request.Name] = notion.PeopleProperty{
+				People: users,
+			}
 			break
 		case "status":
 			value, status := request.Value.(string)
@@ -285,7 +318,7 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			}
 			properties[request.Name] = notion.StatusProperty{
 				Status: notion.Status{
-					ID:   notion.ObjectID(value),
+					ID:   notion.PropertyID(value),
 					Name: "undefined",
 				},
 			}
@@ -295,7 +328,7 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 		}
 	}
 
-	resp, err := client.Page.Create(ctx, &notion.PageCreateRequest{
+	resp, err := notionClient.Page.Create(ctx, &notion.PageCreateRequest{
 		Parent: notion.Parent{
 			Type:       "database_id",
 			DatabaseID: notion.DatabaseID(databaseId),
@@ -314,6 +347,111 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 	return notion.Page{}, nil
 }
 
+func GetSelectOptions(databaseId string, selectName string) ([]models.Select, error) {
+	database, err := notionClient.Database.Get(ctx, notion.DatabaseID(databaseId))
+	if err != nil {
+		return nil, err
+	}
+	var selects []models.Select
+	for key, property := range database.Properties {
+		if key != selectName {
+			continue
+		}
+		if property.GetType() == "multi_select" {
+			propertyObject, status := property.(*notion.MultiSelectPropertyConfig)
+			if !status {
+				return nil, errors.New("can't cast interface to MultiSelectPropertyConfig")
+			}
+			var options []models.Option
+			for _, option := range propertyObject.MultiSelect.Options {
+				options = append(options, models.Option{
+					Id:   string(option.ID),
+					Name: option.Name,
+				})
+			}
+			selects = append(selects, models.Select{
+				Id:      string(propertyObject.ID),
+				Name:    key,
+				Options: options,
+			})
+		}
+		if property.GetType() == "select" {
+			propertyObject, status := property.(*notion.SelectPropertyConfig)
+			if !status {
+				return nil, errors.New("can't cast interface to SelectPropertyConfig")
+			}
+			var options []models.Option
+			for _, option := range propertyObject.Select.Options {
+				options = append(options, models.Option{
+					Id:   string(option.ID),
+					Name: option.Name,
+				})
+			}
+			selects = append(selects, models.Select{
+				Id:      string(propertyObject.ID),
+				Name:    key,
+				Options: options,
+			})
+
+		}
+	}
+	if len(selects) == 0 {
+		return nil, errors.New("there is no select or multiselect in this database")
+	}
+	return selects, nil
+}
+
+func GetSelectAllOptions(databaseId string) ([]models.Select, error) {
+	database, err := notionClient.Database.Get(ctx, notion.DatabaseID(databaseId))
+	if err != nil {
+		return nil, err
+	}
+	var selects []models.Select
+	for key, property := range database.Properties {
+		if property.GetType() == "multi_select" {
+			propertyObject, status := property.(*notion.MultiSelectPropertyConfig)
+			if !status {
+				return nil, errors.New("can't cast interface to MultiSelectPropertyConfig")
+			}
+			var options []models.Option
+			for _, option := range propertyObject.MultiSelect.Options {
+				options = append(options, models.Option{
+					Id:   string(option.ID),
+					Name: option.Name,
+				})
+			}
+			selects = append(selects, models.Select{
+				Id:      string(propertyObject.ID),
+				Name:    key,
+				Options: options,
+			})
+		}
+		if property.GetType() == "select" {
+			propertyObject, status := property.(*notion.SelectPropertyConfig)
+			if !status {
+				return nil, errors.New("can't cast interface to SelectPropertyConfig")
+			}
+			var options []models.Option
+			for _, option := range propertyObject.Select.Options {
+				options = append(options, models.Option{
+					Id:   string(option.ID),
+					Name: option.Name,
+				})
+			}
+			selects = append(selects, models.Select{
+				Id:      string(propertyObject.ID),
+				Name:    key,
+				Options: options,
+			})
+
+		}
+	}
+	if len(selects) == 0 {
+		return nil, errors.New("there is no select or multiselect in this database")
+	}
+	return selects, nil
+}
+
 func returnPage(page notion.Page) (models.SiteResponse, error) {
 	// The problem is, this is a database entry, which has no fixed structure. There does not have to be a name, because this column can also be renamed. The same with the description.
 	return models.SiteResponse{
@@ -325,6 +463,7 @@ func returnPage(page notion.Page) (models.SiteResponse, error) {
 	}, nil
 
 }
+
 func returnDatabase(database notion.Database) (models.SiteResponse, error) {
 	description := ""
 	if len(database.Description) != 0 && database.Description[0].PlainText != "" {
@@ -360,160 +499,10 @@ func uploadFile(fileString string) (string, error) {
 	return "", nil
 }
 
-//
-//func ListAllPages(showPagesQuery bool) ([]models.SiteResponse, error) {
-//	resp, err := client.Search.Do(ctx, &notion.SearchRequest{})
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	var sites []models.SiteResponse
-//	for _, result := range resp.Results {
-//		database := result.GetObject()
-//
-//			databaseResp, err := returnDatabase(database)
-//			if err != nil {
-//				return nil, err
-//			}
-//			sites = append(sites, databaseResp)
-//			continue
-//
-//		if showPagesQuery {
-//			continue
-//		}
-//		page, status := result.(notion.Page)
-//		if status {
-//			pageResp, err := returnPage(page)
-//			if err != nil {
-//				return nil, err
-//			}
-//			sites = append(sites, pageResp)
-//			continue
-//		}
-//		return nil, errors.New("an object is listed which is neither a database nor a page, please check the response")
-//	}
-//	return sites, nil
-//}
-//func ListDatabase(id string) (notion.Database, error) {
-//	resp, err := client.FindDatabaseByID(ctx, id)
-//	if err != nil {
-//		return notion.Database{}, err
-//	}
-//	return resp, nil
-//}
-//func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Page, error) {
-//
-//	var databaseProperties notion.DatabasePageProperties
-//	var databaseProperty map[string]interface{}
-//	for _, request := range requests {
-//		switch request.Type {
-//		case "title":
-//			databaseProperty = map[string]interface{}{request.Name: notion.DatabaseProperty{
-//				Name: request.Value.(string),
-//			}}
-//			break
-//		case "rich_text":
-//			propertyType := flag.String("notion.DatabasePropertyType", request.Type, "")
-//			//propertyValue := flag.String("notion.DatabasePropertyValue", request.Value.(string), "")
-//			databaseProperty = map[string]interface{}{request.Name: notion.DatabaseProperty{
-//				Type:     notion.DatabasePropertyType(*propertyType),
-//				RichText: &notion.EmptyMetadata{},
-//			}}
-//			break
-//		case "number":
-//
-//			break
-//		case "select":
-//			break
-//		case "multi_select":
-//			break
-//		case "date":
-//			break
-//		case "people":
-//			break
-//		case "files":
-//			break
-//		case "checkbox":
-//			break
-//		case "url":
-//			break
-//		case "email":
-//			break
-//		case "phone_number":
-//			break
-//		case "formula":
-//			break
-//		case "relation":
-//			break
-//		case "rollup":
-//			break
-//		case "created_time":
-//			break
-//		case "created_by":
-//			break
-//		case "last_edited_time":
-//			break
-//		case "last_edited_by":
-//			break
-//		case "status":
-//			break
-//		default:
-//			return notion.Page{}, errors.New("there is no type in notion that is called this: " + request.Type)
-//		}
-//
-//		//databasePropertiesMap := map[string]interface{}{request.Name: notion.DatabaseProperty{
-//		//	Name: request.Name,
-//		//}}
-//
-//		databasePropertiesString, err := json.Marshal(databaseProperty)
-//		if err != nil {
-//			return notion.Page{}, err
-//		}
-//		err = json.Unmarshal(databasePropertiesString, &databaseProperties)
-//		if err != nil {
-//			return notion.Page{}, err
-//		}
-//	}
-//
-//	resp, err := client.CreatePage(ctx, notion.CreatePageParams{
-//		ParentType:             "database",
-//		ParentID:               databaseId,
-//		DatabasePageProperties: &databaseProperties,
-//		Children:               nil,
-//		Icon:                   nil,
-//		Cover:                  nil,
-//	})
-//	if err != nil {
-//		return notion.Page{}, err
-//	}
-//	_ = resp
-//	return notion.Page{}, nil
-//
-//}
-//
-//func returnPage(page notion.Page) (models.SiteResponse, error) {
-//	// The problem is, this is a database entry, which has no fixed structure. There does not have to be a name, because this column can also be renamed. The same with the description.
-//	return models.SiteResponse{
-//		Id:          page.ID,
-//		Name:        "",
-//		Description: "",
-//		Author:      page.CreatedBy.ID,
-//		Type:        "page",
-//	}, nil
-//
-//}
-//func returnDatabase(database notion.ObjectType) (models.SiteResponse, error) {
-//	description := ""
-//	if len(database.Description) != 0 && database.Description[0].PlainText != "" {
-//		description = database.Description[0].PlainText
-//	}
-//	return models.SiteResponse{
-//		Id:          database.ID,
-//		Name:        database.Title[0].PlainText,
-//		Description: description,
-//		Author:      database.CreatedBy.ID,
-//		Type:        "database",
-//	}, nil
-//
-//}
+func Me() error {
+	//user, _ := notionClient.User.Me(ctx)
+	global.User = &global.NotionUser{
+		Id: "7403beb1-603d-4f32-9014-b15a8e4212c7",
+	}
+	return nil
+}

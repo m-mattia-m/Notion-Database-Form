@@ -6,7 +6,7 @@ require (
 	github.com/getsentry/sentry-go v0.15.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/joho/godotenv v1.4.0
-	github.com/jomei/notionapi v1.9.3
+	github.com/jomei/notionapi v1.10.1
 	github.com/zitadel/oidc v1.11.0
 	github.com/zitadel/zitadel-go/v2 v2.0.2
 )
