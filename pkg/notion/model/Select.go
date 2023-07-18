@@ -1,4 +1,4 @@
-package models
+package model
 
 type Option struct {
 	Id   string `json: "id"`

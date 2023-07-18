@@ -2,10 +2,8 @@ package helper
 
 import (
 	"errors"
-	"log"
-	"os"
-
 	"github.com/joho/godotenv"
+	"os"
 )
 
 func GetEnv(key string) (string, error) {
@@ -17,6 +15,5 @@ func GetEnv(key string) (string, error) {
 }
 
 func init() {
-	log.Println("[ENV]: Status -> Env-init is loaded")
 	godotenv.Load()
 }

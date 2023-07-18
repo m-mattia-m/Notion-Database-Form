@@ -1,15 +1,14 @@
 package v1
 
 import (
-	"Notion-Forms/pkg/notion"
-	"Notion-Forms/pkg/notion/models"
+	"Notion-Forms/pkg/notion/model"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 )
 
-func ListPages(c *gin.Context) {
+func (api ApiClient) ListPages(c *gin.Context) {
 	showPagesQueryBool := false
 	var err error
 	showPagesQuery := c.Query("showpages")
@@ -20,7 +19,7 @@ func ListPages(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
 		return
 	}
-	pages, err := notion.ListAllPages(showPagesQueryBool)
+	pages, err := api.Service.ListAllPages(showPagesQueryBool)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
 		return
@@ -28,12 +27,12 @@ func ListPages(c *gin.Context) {
 	c.JSON(http.StatusOK, pages)
 }
 
-func ListPage(c *gin.Context) {
+func (api ApiClient) GetPage(c *gin.Context) {
 	id := c.Param("id")
 	pageType := c.Param("type")
 
 	if pageType == "database" {
-		database, err := notion.ListDatabase(id)
+		database, err := api.Service.GetDatabase(id)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, err)
 			return
@@ -42,7 +41,7 @@ func ListPage(c *gin.Context) {
 		return
 	}
 
-	page, err := notion.ListPage(id)
+	page, err := api.Service.GetPage(id)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
 		return
@@ -51,14 +50,14 @@ func ListPage(c *gin.Context) {
 	c.JSON(http.StatusOK, page)
 }
 
-func CreateRecord(c *gin.Context) {
+func (api ApiClient) CreateRecord(c *gin.Context) {
 	databaseId := c.Param("databaseId")
-	var recordRequest []models.RecordRequest
+	var recordRequest []model.RecordRequest
 	if error := c.BindJSON(&recordRequest); error != nil {
 		fmt.Println(error)
 		return
 	}
-	project, err := notion.CreateRecord(databaseId, recordRequest)
+	project, err := api.Service.CreateRecord(databaseId, recordRequest)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
 		return
@@ -66,9 +65,9 @@ func CreateRecord(c *gin.Context) {
 	c.JSON(http.StatusOK, project)
 }
 
-func GetSelectAllOptions(c *gin.Context) {
+func (api ApiClient) ListAllSelectOptions(c *gin.Context) {
 	databaseId := c.Param("databaseId")
-	options, err := notion.GetSelectAllOptions(databaseId)
+	options, err := api.Service.ListAllSelectOptions(databaseId)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
 		return
@@ -76,10 +75,10 @@ func GetSelectAllOptions(c *gin.Context) {
 	c.JSON(http.StatusOK, options)
 }
 
-func GetSelectOptions(c *gin.Context) {
+func (api ApiClient) ListSelectOptions(c *gin.Context) {
 	databaseId := c.Param("databaseId")
 	selectColumn := c.Param("select")
-	options, err := notion.GetSelectOptions(databaseId, selectColumn)
+	options, err := api.Service.ListSelectOptions(databaseId, selectColumn)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, err)
 		return

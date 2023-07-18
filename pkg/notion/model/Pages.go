@@ -1,4 +1,4 @@
-package models
+package model
 
 type SiteResponse struct {
 	Id          string `json:"id"`

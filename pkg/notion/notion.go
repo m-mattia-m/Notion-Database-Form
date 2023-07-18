@@ -1,41 +1,58 @@
 package notion
 
 import (
-	"Notion-Forms/pkg/global"
-	"Notion-Forms/pkg/helper"
-	"Notion-Forms/pkg/notion/models"
+	"Notion-Forms/pkg/notion/model"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/joho/godotenv"
 	notion "github.com/jomei/notionapi"
+	"os"
 	"strconv"
 	"time"
 )
 
-var (
-	ctx          context.Context
-	notionClient *notion.Client
-)
-
-func Client() error {
-	key, err := helper.GetEnv("NOTION_SECRET_KEY")
-	if err != nil {
-		return err
-	}
-	notionClient = notion.NewClient(notion.Token(key))
-	ctx = context.Background()
-	Me()
-	return nil
+func init() {
+	godotenv.Load()
 }
 
-func ListAllPages(showPagesQuery bool) ([]models.SiteResponse, error) {
-	resp, err := notionClient.Search.Do(ctx, &notion.SearchRequest{})
+type Client struct {
+	ctx    context.Context
+	client *notion.Client
+	user   *model.User
+}
+
+func New() (*Client, error) {
+	secretKey := os.Getenv("NOTION_SECRET_KEY")
+	if secretKey == "" {
+		return nil, fmt.Errorf("failed to get env-var 'NOTION_SECRET_KEY'")
+	}
+
+	notionClient := notion.NewClient(notion.Token(secretKey))
+	ctx := context.Background()
+
+	user, err := notionClient.User.Me(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get notion-user: %s", err)
+	}
+
+	return &Client{
+		ctx:    ctx,
+		client: notionClient,
+		user: &model.User{
+			Id: user.ID.String(),
+		},
+	}, nil
+}
+
+func (c *Client) ListAllPages(showPagesQuery bool) ([]model.SiteResponse, error) {
+	resp, err := c.client.Search.Do(c.ctx, &notion.SearchRequest{})
 
 	if err != nil {
 		return nil, err
 	}
 
-	var sites []models.SiteResponse
+	var sites []model.SiteResponse
 	for _, result := range resp.Results {
 		object := result.GetObject()
 		if object == "database" {
@@ -71,23 +88,23 @@ func ListAllPages(showPagesQuery bool) ([]models.SiteResponse, error) {
 	return sites, err
 }
 
-func ListDatabase(id string) (notion.Database, error) {
-	resp, err := notionClient.Database.Get(ctx, notion.DatabaseID(id))
+func (c *Client) GetDatabase(id string) (notion.Database, error) {
+	resp, err := c.client.Database.Get(c.ctx, notion.DatabaseID(id))
 	if err != nil {
 		return notion.Database{}, err
 	}
 	return *resp, nil
 }
 
-func ListPage(id string) (notion.Page, error) {
-	resp, err := notionClient.Page.Get(ctx, notion.PageID(id))
+func (c *Client) GetPage(id string) (notion.Page, error) {
+	resp, err := c.client.Page.Get(c.ctx, notion.PageID(id))
 	if err != nil {
 		return notion.Page{}, err
 	}
 	return *resp, nil
 }
 
-func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Page, error) {
+func (c *Client) CreateRecord(databaseId string, requests []model.RecordRequest) (notion.Page, error) {
 	properties := map[string]notion.Property{}
 
 	for _, request := range requests {
@@ -290,7 +307,7 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			break
 		case "created_by":
 			var users []notion.User
-			users = append(users, notion.User{ID: notion.UserID(global.User.Id)})
+			users = append(users, notion.User{ID: notion.UserID(c.user.Id)})
 			properties[request.Name] = notion.PeopleProperty{
 				People: users,
 			}
@@ -306,7 +323,7 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 			break
 		case "last_edited_by":
 			var users []notion.User
-			users = append(users, notion.User{ID: notion.UserID(global.User.Id)})
+			users = append(users, notion.User{ID: notion.UserID(c.user.Id)})
 			properties[request.Name] = notion.PeopleProperty{
 				People: users,
 			}
@@ -328,7 +345,7 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 		}
 	}
 
-	resp, err := notionClient.Page.Create(ctx, &notion.PageCreateRequest{
+	resp, err := c.client.Page.Create(c.ctx, &notion.PageCreateRequest{
 		Parent: notion.Parent{
 			Type:       "database_id",
 			DatabaseID: notion.DatabaseID(databaseId),
@@ -347,12 +364,12 @@ func CreateRecord(databaseId string, requests []models.RecordRequest) (notion.Pa
 	return notion.Page{}, nil
 }
 
-func GetSelectOptions(databaseId string, selectName string) ([]models.Select, error) {
-	database, err := notionClient.Database.Get(ctx, notion.DatabaseID(databaseId))
+func (c *Client) ListSelectOptions(databaseId string, selectName string) ([]model.Select, error) {
+	database, err := c.client.Database.Get(c.ctx, notion.DatabaseID(databaseId))
 	if err != nil {
 		return nil, err
 	}
-	var selects []models.Select
+	var selects []model.Select
 	for key, property := range database.Properties {
 		if key != selectName {
 			continue
@@ -362,14 +379,14 @@ func GetSelectOptions(databaseId string, selectName string) ([]models.Select, er
 			if !status {
 				return nil, errors.New("can't cast interface to MultiSelectPropertyConfig")
 			}
-			var options []models.Option
+			var options []model.Option
 			for _, option := range propertyObject.MultiSelect.Options {
-				options = append(options, models.Option{
+				options = append(options, model.Option{
 					Id:   string(option.ID),
 					Name: option.Name,
 				})
 			}
-			selects = append(selects, models.Select{
+			selects = append(selects, model.Select{
 				Id:      string(propertyObject.ID),
 				Name:    key,
 				Options: options,
@@ -380,14 +397,14 @@ func GetSelectOptions(databaseId string, selectName string) ([]models.Select, er
 			if !status {
 				return nil, errors.New("can't cast interface to SelectPropertyConfig")
 			}
-			var options []models.Option
+			var options []model.Option
 			for _, option := range propertyObject.Select.Options {
-				options = append(options, models.Option{
+				options = append(options, model.Option{
 					Id:   string(option.ID),
 					Name: option.Name,
 				})
 			}
-			selects = append(selects, models.Select{
+			selects = append(selects, model.Select{
 				Id:      string(propertyObject.ID),
 				Name:    key,
 				Options: options,
@@ -401,26 +418,26 @@ func GetSelectOptions(databaseId string, selectName string) ([]models.Select, er
 	return selects, nil
 }
 
-func GetSelectAllOptions(databaseId string) ([]models.Select, error) {
-	database, err := notionClient.Database.Get(ctx, notion.DatabaseID(databaseId))
+func (c *Client) ListAllSelectOptions(databaseId string) ([]model.Select, error) {
+	database, err := c.client.Database.Get(c.ctx, notion.DatabaseID(databaseId))
 	if err != nil {
 		return nil, err
 	}
-	var selects []models.Select
+	var selects []model.Select
 	for key, property := range database.Properties {
 		if property.GetType() == "multi_select" {
 			propertyObject, status := property.(*notion.MultiSelectPropertyConfig)
 			if !status {
 				return nil, errors.New("can't cast interface to MultiSelectPropertyConfig")
 			}
-			var options []models.Option
+			var options []model.Option
 			for _, option := range propertyObject.MultiSelect.Options {
-				options = append(options, models.Option{
+				options = append(options, model.Option{
 					Id:   string(option.ID),
 					Name: option.Name,
 				})
 			}
-			selects = append(selects, models.Select{
+			selects = append(selects, model.Select{
 				Id:      string(propertyObject.ID),
 				Name:    key,
 				Options: options,
@@ -431,14 +448,14 @@ func GetSelectAllOptions(databaseId string) ([]models.Select, error) {
 			if !status {
 				return nil, errors.New("can't cast interface to SelectPropertyConfig")
 			}
-			var options []models.Option
+			var options []model.Option
 			for _, option := range propertyObject.Select.Options {
-				options = append(options, models.Option{
+				options = append(options, model.Option{
 					Id:   string(option.ID),
 					Name: option.Name,
 				})
 			}
-			selects = append(selects, models.Select{
+			selects = append(selects, model.Select{
 				Id:      string(propertyObject.ID),
 				Name:    key,
 				Options: options,
@@ -452,9 +469,16 @@ func GetSelectAllOptions(databaseId string) ([]models.Select, error) {
 	return selects, nil
 }
 
-func returnPage(page notion.Page) (models.SiteResponse, error) {
+func (c *Client) GetMe() (*model.User, error) {
+	user, _ := c.client.User.Me(c.ctx)
+	return &model.User{
+		Id: user.ID.String(), // 7403beb1-603d-4f32-9014-b15a8e4212c7
+	}, nil
+}
+
+func returnPage(page notion.Page) (model.SiteResponse, error) {
 	// The problem is, this is a database entry, which has no fixed structure. There does not have to be a name, because this column can also be renamed. The same with the description.
-	return models.SiteResponse{
+	return model.SiteResponse{
 		Id:          page.ID.String(),
 		Name:        "",
 		Description: "",
@@ -464,12 +488,12 @@ func returnPage(page notion.Page) (models.SiteResponse, error) {
 
 }
 
-func returnDatabase(database notion.Database) (models.SiteResponse, error) {
+func returnDatabase(database notion.Database) (model.SiteResponse, error) {
 	description := ""
 	if len(database.Description) != 0 && database.Description[0].PlainText != "" {
 		description = database.Description[0].PlainText
 	}
-	return models.SiteResponse{
+	return model.SiteResponse{
 		Id:          database.ID.String(),
 		Name:        database.Title[0].PlainText,
 		Description: description,
@@ -497,12 +521,4 @@ func toStringArray(object interface{}) ([]string, error) {
 
 func uploadFile(fileString string) (string, error) {
 	return "", nil
-}
-
-func Me() error {
-	//user, _ := notionClient.User.Me(ctx)
-	global.User = &global.NotionUser{
-		Id: "7403beb1-603d-4f32-9014-b15a8e4212c7",
-	}
-	return nil
 }

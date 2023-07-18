@@ -1,10 +1,6 @@
-package global
+package model
 
-var (
-	User *NotionUser
-)
-
-type NotionUser struct {
+type User struct {
 	Id string `json:"id"`
 	//Firstname string `json:"firstname"`
 	//Lastname  string `json:"lastname"`

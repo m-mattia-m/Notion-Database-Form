@@ -1,4 +1,4 @@
-package models
+package model
 
 type ZitadelUserinfo struct {
 	Email             string                 `json:"email"`
