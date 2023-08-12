@@ -1,2 +1,5 @@
 /.env
 /.idea/jsLibraryMappings.xml
+./configs/zitadel-service-user-key.json
+configs/zitadel-service-user-key.json
+/configs/zitadel-service-user-key.json
