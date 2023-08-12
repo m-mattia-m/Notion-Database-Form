@@ -1,9 +1,10 @@
 # Notion Forms
 
-## ENV
-```
-NOTION_SECRET_KEY=
-```
+## Environment-variables
+
+Go to [environment-variables](/.env]).
+
+
 
 ## Special
 
@@ -13,3 +14,8 @@ NOTION_SECRET_KEY=
 |  |   |
 |  |   |
 
+
+
+## ToDo
+
+https://github.com/sirupsen/logrus einbauen im logger für Farben und timestaps -> ggf. kann auch kategorisiert werden -> warning, fatal, error, ...

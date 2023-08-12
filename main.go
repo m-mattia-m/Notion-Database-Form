@@ -4,6 +4,9 @@ import (
 	"Notion-Forms/internal/api"
 	apiV1 "Notion-Forms/internal/api/v1"
 	"Notion-Forms/internal/service"
+	"Notion-Forms/pkg/cache"
+	"Notion-Forms/pkg/iam"
+	"Notion-Forms/pkg/logging"
 	"Notion-Forms/pkg/notion"
 	"context"
 	"fmt"
@@ -25,7 +28,7 @@ const (
 // @description this is the api for generated Notion forms
 
 // @contact.name API Support
-// @contact.email develop@mattiamueggler.ch
+// @contact.email develop@generated-notion-forms.com
 
 // @host      localhost:8081
 // @BasePath  /api/v1
@@ -48,53 +51,77 @@ func main() {
 		log.Fatal("error when init the config: " + err.Error())
 	}
 
-	dbClient, err := createDbConnection()
+	dbClient, dbName, err := createDbConnection()
 	if err != nil {
 		log.Fatal("error when starting db: " + err.Error())
 	}
 
-	notionClient, err := notion.New()
+	cacheClient, err := createLRUCache()
+	if err != nil {
+		log.Fatal("error when starting cache: " + err.Error())
+	}
+
+	notionClient, err := createNotionClient()
 	if err != nil {
 		log.Fatal("error when starting notion-client: " + err.Error())
 	}
 
-	svc := service.New(context.Background(), dbClient, notionClient)
+	loggingClient, err := createLoggingClient()
+	if err != nil {
+		log.Fatal("error when starting logging-client: " + err.Error())
+	}
+
+	iamClient, err := createIamClient()
+	if err != nil {
+		log.Fatal("error when starting iam-client: " + err.Error())
+	}
+
+	svc := service.New(context.Background(), dbClient, dbName, notionClient, cacheClient, loggingClient, iamClient)
+	//listenerClient := listener.New(dbClient, dbName, notionClient, cacheClient, loggingClient, iamClient)
+	//err = listenerClient.StartListener()
+	//if err != nil {
+	//	log.Fatal("error when starting event-bus: " + err.Error())
+	//}
 
 	apiConfig, err := getApiConfig()
 	if err != nil {
 		log.Fatal("error when reading the api-config: " + err.Error())
 	}
 
-	apiClient := api.New(svc, *apiConfig)
-	err = api.Router(apiClient)
+	//apiClient := api.New(svc, *apiConfig, *authClient)
+	err = api.Router(svc, *apiConfig)
 	if err != nil {
 		log.Fatal("error when starting router: " + err.Error())
 	}
 }
 
-func createDbConnection() (*mongo.Client, error) {
+func createDbConnection() (*mongo.Client, string, error) {
 	mongoHost, found := os.LookupEnv("MONGO_HOST")
 	if !found {
-		return nil, fmt.Errorf("env-variable 'MONGO_ROOT_PASSWORD' not found")
+		return nil, "", fmt.Errorf("env-variable 'MONGO_ROOT_PASSWORD' not found")
 	}
 	mongoPort, found := os.LookupEnv("MONGO_PORT")
 	if !found {
-		return nil, fmt.Errorf("env-variable 'MONGO_ROOT_PASSWORD' not found")
+		return nil, "", fmt.Errorf("env-variable 'MONGO_ROOT_PASSWORD' not found")
 	}
 	mongoUser, found := os.LookupEnv("MONGO_ROOT_USER")
 	if !found {
-		return nil, fmt.Errorf("env-variable 'MONGO_ROOT_USER' not found")
+		return nil, "", fmt.Errorf("env-variable 'MONGO_ROOT_USER' not found")
 	}
 	mongoPassword, found := os.LookupEnv("MONGO_ROOT_PASSWORD")
 	if !found {
-		return nil, fmt.Errorf("env-variable 'MONGO_ROOT_PASSWORD' not found")
+		return nil, "", fmt.Errorf("env-variable 'MONGO_ROOT_PASSWORD' not found")
+	}
+	mongoDatabaseName, found := os.LookupEnv("MONGO_DATABASE_NAME")
+	if !found {
+		return nil, "", fmt.Errorf("env-variable 'MONGO_DATABASE_NAME' not found")
 	}
 
 	var uri = fmt.Sprintf("mongodb://%s:%s", mongoHost, mongoPort)
 
 	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
 	credentials := options.Credential{
-		AuthMechanism: "PLAIN",
+		AuthMechanism: "SCRAM-SHA-256",
 		Username:      mongoUser,
 		Password:      mongoPassword,
 	}
@@ -104,10 +131,109 @@ func createDbConnection() (*mongo.Client, error) {
 
 	client, err := mongo.Connect(context.TODO(), opts)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return client, nil
+	return client, mongoDatabaseName, nil
+}
+
+func createNotionClient() (*notion.Client, error) {
+	secretKey := os.Getenv("NOTION_SECRET_KEY")
+	if secretKey == "" {
+		return nil, fmt.Errorf("env-variable 'NOTION_SECRET_KEY' not found")
+	}
+
+	clientId := os.Getenv("NOTION_CLIENT_ID")
+	if secretKey == "" {
+		return nil, fmt.Errorf("env-variable 'NOTION_CLIENT_ID' not found")
+	}
+
+	clientSecret := os.Getenv("NOTION_CLIENT_SECRET")
+	if secretKey == "" {
+		return nil, fmt.Errorf("env-variable 'NOTION_CLIENT_SECRET' not found")
+	}
+
+	return notion.New("", clientId, clientSecret)
+}
+
+func createLRUCache() (*cache.LRUCache, error) {
+	redisHost, found := os.LookupEnv("REDIS_HOST")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'REDIS_HOST' not found")
+	}
+	redisPort, found := os.LookupEnv("REDIS_PORT")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'REDIS_PORT' not found")
+	}
+	redisPassword, found := os.LookupEnv("REDIS_PASSWORD")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'REDIS_PASSWORD' not found")
+	}
+	cacheCapacity, found := os.LookupEnv("CACHE_CAPACITY")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'REDIS_PASSWORD' not found")
+	}
+	cacheCapacityInt, err := strconv.ParseInt(cacheCapacity, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert cache-capacity to int")
+	}
+
+	lruCache := cache.NewLRUCache(fmt.Sprintf("%s:%s", redisHost, redisPort), redisPassword, int(cacheCapacityInt))
+	return lruCache, nil
+}
+
+func createLoggingClient() (*logging.Client, error) {
+	appEnv, found := os.LookupEnv("APP_ENV")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'APP_ENV' not found")
+	}
+
+	envDns, found := os.LookupEnv("LOGGING_DNS")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'LOGGING_DNS' not found")
+	}
+
+	enableLogging, found := os.LookupEnv("ENABLE_LOGGING")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'ENABLE_LOGGING' not found")
+	}
+
+	enableExternalLogging, found := os.LookupEnv("EXTERNAL_ENABLE_LOGGING")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'EXTERNAL_ENABLE_LOGGING' not found")
+	}
+
+	return logging.New(appEnv, envDns, enableLogging, enableExternalLogging)
+}
+
+func createIamClient() (*iam.Client, error) {
+	envIssuer, found := os.LookupEnv("ZITADEL_ISSUER")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'ZITADEL_ISSUER' not found")
+	}
+	envApi, found := os.LookupEnv("ZITADEL_API")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'ZITADEL_API' not found")
+	}
+	organizationId, found := os.LookupEnv("ZITADEL_ORGANIZATION_ID")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'ZITADEL_ORGANIZATION_ID' not found")
+	}
+	organizationName, found := os.LookupEnv("ZITADEL_ORGANIZATION_NAME")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'ZITADEL_ORGANIZATION_NAME' not found")
+	}
+	projectId, found := os.LookupEnv("ZITADEL_PROJECT_ID")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'ZITADEL_PROJECT_ID' not found")
+	}
+	projectName, found := os.LookupEnv("ZITADEL_PROJECT_NAME")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'ZITADEL_PROJECT_NAME' not found")
+	}
+
+	return iam.New(envIssuer, envApi, organizationId, organizationName, projectId, projectName)
+
 }
 
 func initConfig() error {
@@ -143,6 +269,15 @@ func getApiConfig() (*apiV1.ApiConfig, error) {
 	if schemas == "" {
 		return nil, fmt.Errorf("failed to get env-variable: 'APP_SCHEMES'")
 	}
+	oidcAuthority := os.Getenv("OIDC_AUTHORITY")
+	if runMode == "" {
+		return nil, fmt.Errorf("failed to get env-variable: 'OIDC_AUTHORITY'")
+	}
+
+	oidcClientId := os.Getenv("OIDC_CLIENT_ID")
+	if runMode == "" {
+		return nil, fmt.Errorf("failed to get env-variable: 'OIDC_CLIENT_ID'")
+	}
 
 	maxPageSize, err := strconv.ParseInt(os.Getenv("APP_MAX_PAGE_SIZE"), 10, 64)
 	if err != nil {
@@ -165,5 +300,7 @@ func getApiConfig() (*apiV1.ApiConfig, error) {
 		Host:            host,
 		Domain:          domain,
 		Schemas:         schemas,
+		OidcAuthority:   oidcAuthority,
+		OidcClientId:    oidcClientId,
 	}, nil
 }

@@ -8,13 +8,14 @@ import (
 
 type Dao struct {
 	engine *mongo.Client
+	dbName string
 }
 
-func New(engine *mongo.Client) *Dao {
-	return &Dao{engine: engine}
+func New(engine *mongo.Client, dbName string) *Dao {
+	return &Dao{engine: engine, dbName: dbName}
 }
 
-func (dao *Dao) GetConnection() error {
-	err := dao.engine.Ping(context.TODO(), &readpref.ReadPref{})
+func (svc *Dao) GetConnection() error {
+	err := svc.engine.Ping(context.TODO(), &readpref.ReadPref{})
 	return err
 }

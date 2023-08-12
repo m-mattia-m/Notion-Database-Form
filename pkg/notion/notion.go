@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	notion "github.com/jomei/notionapi"
-	"os"
 	"strconv"
 	"time"
 )
@@ -19,73 +18,25 @@ func init() {
 type Client struct {
 	ctx    context.Context
 	client *notion.Client
-	user   *model.User
 }
 
-func New() (*Client, error) {
-	secretKey := os.Getenv("NOTION_SECRET_KEY")
-	if secretKey == "" {
-		return nil, fmt.Errorf("failed to get env-var 'NOTION_SECRET_KEY'")
+func New(secretKey, clientId, clientSecret string) (*Client, error) {
+	opts := []notion.ClientOption{
+		notion.WithOAuthAppCredentials(clientId, clientSecret),
 	}
 
-	notionClient := notion.NewClient(notion.Token(secretKey))
+	notionClient := notion.NewClient(notion.Token(secretKey), opts...)
 	ctx := context.Background()
 
-	user, err := notionClient.User.Me(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get notion-user: %s", err)
-	}
+	//user, err := notionClient.User.Me(ctx)
+	//if err != nil {
+	//	return nil, fmt.Errorf("failed to get notion-user: %s", err)
+	//}
 
 	return &Client{
 		ctx:    ctx,
 		client: notionClient,
-		user: &model.User{
-			Id: user.ID.String(),
-		},
 	}, nil
-}
-
-func (c *Client) ListAllPages(showPagesQuery bool) ([]model.SiteResponse, error) {
-	resp, err := c.client.Search.Do(c.ctx, &notion.SearchRequest{})
-
-	if err != nil {
-		return nil, err
-	}
-
-	var sites []model.SiteResponse
-	for _, result := range resp.Results {
-		object := result.GetObject()
-		if object == "database" {
-			database, status := result.(*notion.Database)
-			if !status {
-				return nil, errors.New("can't cast the notion-search-response to database")
-			}
-
-			databaseResp, err := returnDatabase(*database)
-			if err != nil {
-				return nil, err
-			}
-			sites = append(sites, databaseResp)
-			continue
-		}
-		if showPagesQuery {
-			continue
-		}
-
-		page, status := result.(*notion.Page)
-		if !status {
-			return nil, errors.New("can't cast the notion-search-response to page")
-		}
-
-		pageResp, err := returnPage(*page)
-		if err != nil {
-			return nil, err
-		}
-		sites = append(sites, pageResp)
-		continue
-	}
-
-	return sites, err
 }
 
 func (c *Client) GetDatabase(id string) (notion.Database, error) {
@@ -96,15 +47,7 @@ func (c *Client) GetDatabase(id string) (notion.Database, error) {
 	return *resp, nil
 }
 
-func (c *Client) GetPage(id string) (notion.Page, error) {
-	resp, err := c.client.Page.Get(c.ctx, notion.PageID(id))
-	if err != nil {
-		return notion.Page{}, err
-	}
-	return *resp, nil
-}
-
-func (c *Client) CreateRecord(databaseId string, requests []model.RecordRequest) (notion.Page, error) {
+func (c *Client) CreateRecord(databaseId, userId string, requests []model.RecordRequest) (notion.Page, error) {
 	properties := map[string]notion.Property{}
 
 	for _, request := range requests {
@@ -307,7 +250,7 @@ func (c *Client) CreateRecord(databaseId string, requests []model.RecordRequest)
 			break
 		case "created_by":
 			var users []notion.User
-			users = append(users, notion.User{ID: notion.UserID(c.user.Id)})
+			users = append(users, notion.User{ID: notion.UserID(userId)})
 			properties[request.Name] = notion.PeopleProperty{
 				People: users,
 			}
@@ -323,7 +266,7 @@ func (c *Client) CreateRecord(databaseId string, requests []model.RecordRequest)
 			break
 		case "last_edited_by":
 			var users []notion.User
-			users = append(users, notion.User{ID: notion.UserID(c.user.Id)})
+			users = append(users, notion.User{ID: notion.UserID(userId)})
 			properties[request.Name] = notion.PeopleProperty{
 				People: users,
 			}
@@ -467,40 +410,6 @@ func (c *Client) ListAllSelectOptions(databaseId string) ([]model.Select, error)
 		return nil, errors.New("there is no select or multiselect in this database")
 	}
 	return selects, nil
-}
-
-func (c *Client) GetMe() (*model.User, error) {
-	user, _ := c.client.User.Me(c.ctx)
-	return &model.User{
-		Id: user.ID.String(), // 7403beb1-603d-4f32-9014-b15a8e4212c7
-	}, nil
-}
-
-func returnPage(page notion.Page) (model.SiteResponse, error) {
-	// The problem is, this is a database entry, which has no fixed structure. There does not have to be a name, because this column can also be renamed. The same with the description.
-	return model.SiteResponse{
-		Id:          page.ID.String(),
-		Name:        "",
-		Description: "",
-		Author:      page.CreatedBy.ID.String(),
-		Type:        "page",
-	}, nil
-
-}
-
-func returnDatabase(database notion.Database) (model.SiteResponse, error) {
-	description := ""
-	if len(database.Description) != 0 && database.Description[0].PlainText != "" {
-		description = database.Description[0].PlainText
-	}
-	return model.SiteResponse{
-		Id:          database.ID.String(),
-		Name:        database.Title[0].PlainText,
-		Description: description,
-		Author:      database.CreatedBy.ID.String(),
-		Type:        "database",
-	}, nil
-
 }
 
 func toStringArray(object interface{}) ([]string, error) {

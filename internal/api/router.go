@@ -3,41 +3,42 @@ package api
 import (
 	apiV1 "Notion-Forms/internal/api/v1"
 	"Notion-Forms/internal/service"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/gin"
 )
 
-type Client struct {
-	Api *apiV1.ApiClient
-}
-
-func New(svc service.Service, apiConfig apiV1.ApiConfig) *Client {
-	return &Client{
-		Api: &apiV1.ApiClient{
-			ApiConfig: apiConfig,
-			Service:   &svc,
-		},
-	}
-}
-
-func Router(client *Client) error {
-	r := gin.New()
+func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
+	r := gin.Default()
+	r.Use(sentrygin.New(sentrygin.Options{}))
+	r.Use(apiV1.SetService(svc))
+	r.Use(apiV1.SetApiConfig(apiConfig))
 	v1 := r.Group("/api/v1")
 	{
-		notionGroup := v1.Group("/notion")
+		notionGroup := v1.Group("/notion", Authenticate)
 		{
-			notionPages := notionGroup.Group("/pages")
+			notionAuth := notionGroup.Group("/authenticate")
 			{
-				notionPages.GET("/", client.Api.ListPages)
-				notionPages.GET("/:type/:id", client.Api.GetPage)
+				notionAuth.POST("/", apiV1.AuthenticateNotion)
 			}
-			notionRecords := notionGroup.Group("/records")
+			notionPages := notionGroup.Group("/page")
 			{
-				notionRecords.POST("/:databaseId", client.Api.CreateRecord)
-				notionRecords.GET("/:databaseId/options", client.Api.ListAllSelectOptions)
-				notionRecords.GET("/:databaseId/options/:select", client.Api.ListSelectOptions)
+				notionPages.GET("/", apiV1.ListPages)
+				notionPages.GET("/:pageId", apiV1.GetPage)
+				//notionPages.DELETE("/cache", apiV1.DeletePageListFromCache)
+				//notionPages.DELETE("/:pageId/cache", apiV1.DeletePageFromCache)
+			}
+			notionDatabases := notionGroup.Group("/database")
+			{
+				notionDatabases.GET("/", apiV1.ListDatabases)
+				notionDatabases.GET("/:databaseId", apiV1.GetDatabase)
+				notionDatabases.POST("/:databaseId", apiV1.CreateRecord)
+				notionDatabases.GET("/:databaseId/properties/options", apiV1.ListAllSelectOptions)
+				notionDatabases.GET("/:databaseId/properties/options/:notionSelectId", apiV1.ListSelectOptions)
+				//notionDatabases.DELETE("/cache", apiV1.DeleteDatabaseListFromCache)
+				//notionDatabases.DELETE("/:id/cache", apiV1.DeleteDatabaseFromCache)
 			}
 		}
 	}
-	err := r.Run(":3000")
+	err := r.Run(":3001")
 	return err
 }

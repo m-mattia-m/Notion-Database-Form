@@ -10,6 +10,7 @@ const mongoCustomPassword = process.env.MONGO_CUSTOM_PASSWORD;
 const projectDb = db = db.getSiblingDB(mongoDatabaseName);
 
 projectDb.createCollection('forms');
+projectDb.createCollection('users');
 
 // db will get created together with user
 db.createUser({
