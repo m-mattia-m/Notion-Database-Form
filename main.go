@@ -98,11 +98,11 @@ func main() {
 func createDbConnection() (*mongo.Client, string, error) {
 	mongoHost, found := os.LookupEnv("MONGO_HOST")
 	if !found {
-		return nil, "", fmt.Errorf("env-variable 'MONGO_ROOT_PASSWORD' not found")
+		return nil, "", fmt.Errorf("env-variable 'MONGO_HOST' not found")
 	}
 	mongoPort, found := os.LookupEnv("MONGO_PORT")
 	if !found {
-		return nil, "", fmt.Errorf("env-variable 'MONGO_ROOT_PASSWORD' not found")
+		return nil, "", fmt.Errorf("env-variable 'MONGO_PORT' not found")
 	}
 	mongoUser, found := os.LookupEnv("MONGO_ROOT_USER")
 	if !found {
