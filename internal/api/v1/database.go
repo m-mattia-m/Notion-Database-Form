@@ -16,7 +16,7 @@ import (
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
-// @Success      			200  {object} model.HttpError
+// @Success      			200  {object} []model.MinimalistDatabase
 // @Failure      			400  {object} model.HttpError
 // @Failure      			404  {object} model.HttpError
 // @Failure      			500  {object} model.HttpError
@@ -36,7 +36,9 @@ func ListDatabases(c *gin.Context) {
 
 	// TODO: Map notion-api-model to own rebuild model
 
-	c.JSON(http.StatusOK, databases)
+	minimalistDatabaseList := svc.ConvertToMinimalistDatabaseList(databases)
+
+	c.JSON(http.StatusOK, minimalistDatabaseList)
 }
 
 // GetDatabase 				godoc
@@ -71,6 +73,7 @@ func GetDatabase(c *gin.Context) {
 		svc.SetAbortResponse(c, "svc", "GetDatabase", fmt.Sprintf("failed to get notion databases by their id"), err)
 		return
 	}
+
 	c.JSON(http.StatusOK, database)
 }
 
@@ -122,6 +125,44 @@ func CreateRecord(c *gin.Context) {
 	// TODO: Add success-response
 
 	c.JSON(http.StatusOK, project)
+}
+
+// GetDatabasePropertiesById 	godoc
+// @title           			GetDatabasePropertiesById
+// @description     			Return the properties of a database by id
+// @Tags 						Notion-Databases
+// @Router  					/notion/database/{databaseId}/properties [get]
+// @Accept 						json
+// @Produce						json
+// @Security					Bearer
+// @Param        				databaseId    path     string  true  "databaseId"
+// @Success      				200  {object} []model.DatabaseProperty
+// @Failure      				400  {object} model.HttpError
+// @Failure      				404  {object} model.HttpError
+// @Failure      				500  {object} model.HttpError
+func GetDatabasePropertiesById(c *gin.Context) {
+	svc, _, _, err := getConfigAndService(c)
+	if err != nil {
+		helper.SetBadRequestResponse(c, fmt.Sprintf("failed to get config and service, contact the administrator"))
+		return
+	}
+
+	databaseId := c.Param("databaseId")
+	if databaseId == "" {
+		helper.SetBadRequestResponse(c, fmt.Sprintf("database-id is required"))
+	}
+
+	// TODO: proof which person this database belongs to
+
+	database, err := svc.GetDatabase(databaseId)
+	if err != nil {
+		svc.SetAbortResponse(c, "svc", "GetDatabase", fmt.Sprintf("failed to get notion databases by their id"), err)
+		return
+	}
+
+	properties, err := svc.ConvertDatabaseToPropertyList(database)
+
+	c.JSON(http.StatusOK, properties)
 }
 
 // ListAllSelectOptions 	godoc

@@ -4,16 +4,10 @@ import (
 	"Notion-Forms/pkg/notion/model"
 	"context"
 	"errors"
-	"fmt"
-	"github.com/joho/godotenv"
 	notion "github.com/jomei/notionapi"
 	"strconv"
 	"time"
 )
-
-func init() {
-	godotenv.Load()
-}
 
 type Client struct {
 	ctx    context.Context
@@ -46,7 +40,6 @@ func (c *Client) CreateRecord(databaseId, userId string, requests []model.Record
 	properties := map[string]notion.Property{}
 
 	for _, request := range requests {
-		fmt.Println("")
 		switch request.Type {
 		case "title":
 			value, status := request.Value.(string)

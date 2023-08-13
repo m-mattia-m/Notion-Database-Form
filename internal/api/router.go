@@ -32,6 +32,7 @@ func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 				notionDatabases.GET("/", apiV1.ListDatabases)
 				notionDatabases.GET("/:databaseId", apiV1.GetDatabase)
 				notionDatabases.POST("/:databaseId", apiV1.CreateRecord)
+				notionDatabases.GET("/:databaseId/properties", apiV1.GetDatabasePropertiesById)
 				notionDatabases.GET("/:databaseId/properties/options", apiV1.ListAllSelectOptions)
 				notionDatabases.GET("/:databaseId/properties/options/:notionSelectId", apiV1.ListSelectOptions)
 				//notionDatabases.DELETE("/cache", apiV1.DeleteDatabaseListFromCache)

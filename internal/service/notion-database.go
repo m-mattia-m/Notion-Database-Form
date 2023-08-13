@@ -1,10 +1,10 @@
 package service
 
 import (
-	"Notion-Forms/internal/listener"
 	"Notion-Forms/internal/model"
 	notionModel "Notion-Forms/pkg/notion/model"
 	"encoding/json"
+	"fmt"
 	notion "github.com/jomei/notionapi"
 	"time"
 )
@@ -15,21 +15,6 @@ func (svc Clients) ListDatabases() ([]*notion.Database, error) {
 }
 
 func (svc Clients) GetDatabase(id string) (notion.Database, error) {
-	cachedString, err := svc.cache.Get(id)
-	if err != nil {
-		return notion.Database{}, err
-	}
-	if cachedString != nil {
-		var databaseObject model.StoreDatabaseObject
-		err = json.Unmarshal([]byte(*cachedString), &databaseObject)
-		if err != nil {
-			return notion.Database{}, err
-		}
-
-		listener.Bus.Publish("notion:update-database", id)
-		return databaseObject.Object, nil
-	}
-
 	database, err := svc.notion.GetDatabase(id)
 	if err != nil {
 		return notion.Database{}, err
@@ -58,4 +43,52 @@ func (svc Clients) ListSelectOptions(databaseId string, selectName string) ([]no
 
 func (svc Clients) ListAllSelectOptions(databaseId string) ([]notionModel.Select, error) {
 	return svc.notion.ListAllSelectOptions(databaseId)
+}
+
+func (svc Clients) ConvertToMinimalistDatabaseList(databaseList []*notion.Database) []model.MinimalistDatabase {
+	var minimalistDatabaseList []model.MinimalistDatabase
+	for _, database := range databaseList {
+		minimalistDatabaseList = append(minimalistDatabaseList, model.MinimalistDatabase{
+			Id:          database.ID.String(),
+			Title:       "database.Title",
+			Description: "database.Description",
+			CreatedTime: database.CreatedTime.String(),
+			Url:         database.URL,
+		})
+	}
+	return minimalistDatabaseList
+}
+
+func (svc Clients) ConvertDatabaseToPropertyList(database notion.Database) ([]model.DatabasePropertyResponse, error) {
+	var propertiesMap map[string]interface{}
+	propertiesJson, err := json.Marshal(database.Properties)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(propertiesJson, &propertiesMap)
+	if err != nil {
+		return nil, err
+	}
+
+	var properties []model.DatabasePropertyResponse
+	for key, value := range propertiesMap {
+		var propertyMap map[string]interface{}
+		propertyJson, err := json.Marshal(value)
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(propertyJson, &propertyMap)
+		if err != nil {
+			return nil, err
+		}
+
+		properties = append(properties, model.DatabasePropertyResponse{
+			Id:   fmt.Sprintf("%v", propertyMap["id"]),
+			Name: key,
+			Type: fmt.Sprintf("%v", propertyMap["type"]),
+		})
+	}
+
+	return properties, nil
+
 }

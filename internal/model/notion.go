@@ -33,3 +33,31 @@ type IamUserNotionUser struct {
 type OAuthCodeRequest struct {
 	Code string `json:"code"`
 }
+
+type MinimalistDatabase struct {
+	Id          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	CreatedTime string `json:"created_time"`
+	Url         string `json:"url"`
+}
+
+type DatabasePropertyResponse struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+	//Value map[string]interface{} `json:"value"`
+	//SelectOptions []DatabasePropertySelectOptions `json:"select_options"`
+}
+
+//type DatabasePropertyMap struct {
+//	Id   string `json:"id"`
+//	Type string `json:"type"`
+//	//Value map[string]interface{} `json:"value"`
+//	//SelectOptions []DatabasePropertySelectOptions `json:"select_options"`
+//}
+
+type DatabasePropertySelectOptions struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
