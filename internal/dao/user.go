@@ -31,6 +31,5 @@ func (svc *Dao) GetUserDataByIamUserId(iamUserId string) (*model.IamUserNotionUs
 		return nil, err
 	}
 
-	resultObject.NotionAccessToken = ""
 	return resultObject, nil
 }

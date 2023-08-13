@@ -4,25 +4,59 @@ import (
 	"Notion-Forms/internal/helper"
 	"Notion-Forms/internal/model"
 	"Notion-Forms/internal/service"
+	"Notion-Forms/pkg/notion"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"strings"
 )
 
 type ApiConfig struct {
-	RunMode         string
-	FrontendHost    string
-	DefaultPageSize int
-	MaxPageSize     int
-	Port            int
-	Host            string
-	Domain          string
-	Schemas         string
-	OidcAuthority   string
-	OidcClientId    string
+	RunMode            string
+	FrontendHost       string
+	DefaultPageSize    int
+	MaxPageSize        int
+	Port               int
+	Host               string
+	Domain             string
+	Schemas            string
+	OidcAuthority      string
+	OidcClientId       string
+	NotionClientId     string
+	NotionClientSecret string
 }
 
-func SetService(svc service.Service) gin.HandlerFunc {
+func SetService(svc service.Service, cfg ApiConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		notionClient, err := notion.New(cfg.NotionClientSecret, cfg.NotionClientId, cfg.NotionClientSecret)
+		if err != nil {
+			svc.SetAbortResponse(c, "notion", "New", fmt.Sprintf("faield to create notion client"), err)
+			return
+		}
+		if !strings.Contains(c.FullPath(), "/notion/authenticate") {
+			oidcUser, err := helper.GetUser(c, model.OidcConfig{
+				AppEnv:        cfg.RunMode,
+				OidcAuthority: cfg.OidcAuthority,
+				OidcClientId:  cfg.OidcClientId,
+			})
+			if err != nil {
+				svc.SetAbortResponse(c, "helper", "GetUser", fmt.Sprintf("failed to get user from context"), err)
+				return
+			}
+
+			iamUserData, err := svc.GetOwnUser(oidcUser)
+			if err != nil {
+				svc.SetAbortResponse(c, "svc", "GetOwnUser", fmt.Sprintf("faield to get own user"), err)
+				return
+			}
+
+			notionClient, err = notion.New(iamUserData.NotionAccessToken, cfg.NotionClientId, iamUserData.NotionAccessToken)
+			if err != nil {
+				svc.SetAbortResponse(c, "notion", "New", fmt.Sprintf("faield to create notion client"), err)
+				return
+			}
+		}
+
+		svc = svc.SetNotionClient(notionClient)
 		c.Set("service", svc)
 		//c.Next()
 	}

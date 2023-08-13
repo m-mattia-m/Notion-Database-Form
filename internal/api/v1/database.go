@@ -5,7 +5,6 @@ import (
 	"Notion-Forms/pkg/notion/model"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	notion "github.com/jomei/notionapi"
 	"net/http"
 )
 
@@ -22,34 +21,20 @@ import (
 // @Failure      			404  {object} model.HttpError
 // @Failure      			500  {object} model.HttpError
 func ListDatabases(c *gin.Context) {
-	svc, config, oidcUser, err := getConfigAndService(c)
+	svc, _, _, err := getConfigAndService(c)
 	// TODO: create an emergency log client which is controlled by eventbus in case the config or the service cannot be loaded correctly.
 	if err != nil {
 		helper.SetBadRequestResponse(c, fmt.Sprintf("failed to get config and service, contact the administrator"))
 		return
 	}
 
-	// TODO: Get own notion user to list databases -> no general call
-	userData, err := svc.GetOwnUser(*oidcUser)
+	databases, err := svc.ListDatabases()
 	if err != nil {
 		svc.SetAbortResponse(c, "svc", "ListDatabases", fmt.Sprintf("failed to list notion databases"), err)
 		return
 	}
-
-	databases, err := svc.ListDatabases() // userData.NotionUserId, userData.NotionAccessToken
-	if err != nil {
-		svc.SetAbortResponse(c, "svc", "ListDatabases", fmt.Sprintf("failed to list notion databases"), err)
-		return
-	}
-
-	notionClient := notion.WithOAuthAppCredentials(userData.NotionUserId, userData.NotionAccessToken)
-
-	notion := notion.NewClient(notion.Token(userData.NotionAccessToken), notionClient)
 
 	// TODO: Map notion-api-model to own rebuild model
-
-	_ = notion
-	_ = config
 
 	c.JSON(http.StatusOK, databases)
 }

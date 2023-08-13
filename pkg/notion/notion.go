@@ -20,18 +20,13 @@ type Client struct {
 	client *notion.Client
 }
 
-func New(secretKey, clientId, clientSecret string) (*Client, error) {
+func New(token, clientId, clientSecret string) (*Client, error) {
 	opts := []notion.ClientOption{
 		notion.WithOAuthAppCredentials(clientId, clientSecret),
 	}
 
-	notionClient := notion.NewClient(notion.Token(secretKey), opts...)
+	notionClient := notion.NewClient(notion.Token(token), opts...)
 	ctx := context.Background()
-
-	//user, err := notionClient.User.Me(ctx)
-	//if err != nil {
-	//	return nil, fmt.Errorf("failed to get notion-user: %s", err)
-	//}
 
 	return &Client{
 		ctx:    ctx,

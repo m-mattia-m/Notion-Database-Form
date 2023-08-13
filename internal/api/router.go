@@ -10,7 +10,7 @@ import (
 func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 	r := gin.Default()
 	r.Use(sentrygin.New(sentrygin.Options{}))
-	r.Use(apiV1.SetService(svc))
+	r.Use(apiV1.SetService(svc, apiConfig))
 	r.Use(apiV1.SetApiConfig(apiConfig))
 	v1 := r.Group("/api/v1")
 	{

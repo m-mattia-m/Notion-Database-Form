@@ -7,7 +7,6 @@ import (
 	"Notion-Forms/pkg/cache"
 	"Notion-Forms/pkg/iam"
 	"Notion-Forms/pkg/logging"
-	"Notion-Forms/pkg/notion"
 	"context"
 	"fmt"
 	"github.com/joho/godotenv"
@@ -61,11 +60,6 @@ func main() {
 		log.Fatal("error when starting cache: " + err.Error())
 	}
 
-	notionClient, err := createNotionClient()
-	if err != nil {
-		log.Fatal("error when starting notion-client: " + err.Error())
-	}
-
 	loggingClient, err := createLoggingClient()
 	if err != nil {
 		log.Fatal("error when starting logging-client: " + err.Error())
@@ -76,19 +70,13 @@ func main() {
 		log.Fatal("error when starting iam-client: " + err.Error())
 	}
 
-	svc := service.New(context.Background(), dbClient, dbName, notionClient, cacheClient, loggingClient, iamClient)
-	//listenerClient := listener.New(dbClient, dbName, notionClient, cacheClient, loggingClient, iamClient)
-	//err = listenerClient.StartListener()
-	//if err != nil {
-	//	log.Fatal("error when starting event-bus: " + err.Error())
-	//}
+	svc := service.New(context.Background(), dbClient, dbName, cacheClient, loggingClient, iamClient)
 
 	apiConfig, err := getApiConfig()
 	if err != nil {
 		log.Fatal("error when reading the api-config: " + err.Error())
 	}
 
-	//apiClient := api.New(svc, *apiConfig, *authClient)
 	err = api.Router(svc, *apiConfig)
 	if err != nil {
 		log.Fatal("error when starting router: " + err.Error())
@@ -135,25 +123,6 @@ func createDbConnection() (*mongo.Client, string, error) {
 	}
 
 	return client, mongoDatabaseName, nil
-}
-
-func createNotionClient() (*notion.Client, error) {
-	secretKey := os.Getenv("NOTION_SECRET_KEY")
-	if secretKey == "" {
-		return nil, fmt.Errorf("env-variable 'NOTION_SECRET_KEY' not found")
-	}
-
-	clientId := os.Getenv("NOTION_CLIENT_ID")
-	if secretKey == "" {
-		return nil, fmt.Errorf("env-variable 'NOTION_CLIENT_ID' not found")
-	}
-
-	clientSecret := os.Getenv("NOTION_CLIENT_SECRET")
-	if secretKey == "" {
-		return nil, fmt.Errorf("env-variable 'NOTION_CLIENT_SECRET' not found")
-	}
-
-	return notion.New("", clientId, clientSecret)
 }
 
 func createLRUCache() (*cache.LRUCache, error) {
@@ -279,6 +248,15 @@ func getApiConfig() (*apiV1.ApiConfig, error) {
 		return nil, fmt.Errorf("failed to get env-variable: 'OIDC_CLIENT_ID'")
 	}
 
+	notionClientId := os.Getenv("NOTION_CLIENT_ID")
+	if runMode == "" {
+		return nil, fmt.Errorf("failed to get env-variable: 'NOTION_CLIENT_ID'")
+	}
+	notionClientSecret := os.Getenv("NOTION_CLIENT_SECRET")
+	if runMode == "" {
+		return nil, fmt.Errorf("failed to get env-variable: 'NOTION_CLIENT_SECRET'")
+	}
+
 	maxPageSize, err := strconv.ParseInt(os.Getenv("APP_MAX_PAGE_SIZE"), 10, 64)
 	if err != nil {
 		maxPageSize = maxPageSizeInit
@@ -292,15 +270,17 @@ func getApiConfig() (*apiV1.ApiConfig, error) {
 	}
 
 	return &apiV1.ApiConfig{
-		RunMode:         runMode,
-		FrontendHost:    frontendHost,
-		DefaultPageSize: int(defaultPageSize),
-		MaxPageSize:     int(maxPageSize),
-		Port:            int(port),
-		Host:            host,
-		Domain:          domain,
-		Schemas:         schemas,
-		OidcAuthority:   oidcAuthority,
-		OidcClientId:    oidcClientId,
+		RunMode:            runMode,
+		FrontendHost:       frontendHost,
+		DefaultPageSize:    int(defaultPageSize),
+		MaxPageSize:        int(maxPageSize),
+		Port:               int(port),
+		Host:               host,
+		Domain:             domain,
+		Schemas:            schemas,
+		OidcAuthority:      oidcAuthority,
+		OidcClientId:       oidcClientId,
+		NotionClientId:     notionClientId,
+		NotionClientSecret: notionClientSecret,
 	}, nil
 }
