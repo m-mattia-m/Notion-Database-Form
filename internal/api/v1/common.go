@@ -23,11 +23,12 @@ type ApiConfig struct {
 	OidcClientId       string
 	NotionClientId     string
 	NotionClientSecret string
+	NotionRedirectUri  string
 }
 
 func SetService(svc service.Service, cfg ApiConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		notionClient, err := notion.New(cfg.NotionClientSecret, cfg.NotionClientId, cfg.NotionClientSecret)
+		notionClient, err := notion.New(cfg.NotionClientSecret, cfg.NotionClientSecret, cfg.NotionClientId, cfg.NotionRedirectUri)
 		if err != nil {
 			svc.SetAbortResponse(c, "notion", "New", fmt.Sprintf("faield to create notion client"), err)
 			return
@@ -49,7 +50,7 @@ func SetService(svc service.Service, cfg ApiConfig) gin.HandlerFunc {
 				return
 			}
 
-			notionClient, err = notion.New(iamUserData.NotionAccessToken, cfg.NotionClientId, iamUserData.NotionAccessToken)
+			notionClient, err = notion.New(iamUserData.NotionAccessToken, iamUserData.NotionAccessToken, cfg.NotionClientId, cfg.NotionRedirectUri)
 			if err != nil {
 				svc.SetAbortResponse(c, "notion", "New", fmt.Sprintf("faield to create notion client"), err)
 				return

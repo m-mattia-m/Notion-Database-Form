@@ -37,8 +37,8 @@ func (svc Clients) CreateRecord(databaseId, userId string, requests []notionMode
 	return svc.notion.CreateRecord(databaseId, userId, requests)
 }
 
-func (svc Clients) ListSelectOptions(databaseId string, selectName string) ([]notionModel.Select, error) {
-	return svc.notion.ListSelectOptions(databaseId, selectName)
+func (svc Clients) ListSelectOptions(databaseId string, selectId string) ([]notionModel.Select, error) {
+	return svc.notion.ListSelectOptions(databaseId, selectId)
 }
 
 func (svc Clients) ListAllSelectOptions(databaseId string) ([]notionModel.Select, error) {
@@ -50,8 +50,8 @@ func (svc Clients) ConvertToMinimalistDatabaseList(databaseList []*notion.Databa
 	for _, database := range databaseList {
 		minimalistDatabaseList = append(minimalistDatabaseList, model.MinimalistDatabase{
 			Id:          database.ID.String(),
-			Title:       "database.Title",
-			Description: "database.Description",
+			Title:       svc.getNotionTitle(database.Title),
+			Description: svc.getNotionTitle(database.Description),
 			CreatedTime: database.CreatedTime.String(),
 			Url:         database.URL,
 		})
@@ -91,4 +91,11 @@ func (svc Clients) ConvertDatabaseToPropertyList(database notion.Database) ([]mo
 
 	return properties, nil
 
+}
+
+func (svc Clients) getNotionTitle(title []notion.RichText) string {
+	for _, titleElement := range title {
+		return titleElement.PlainText
+	}
+	return ""
 }

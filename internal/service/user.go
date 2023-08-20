@@ -27,6 +27,6 @@ func (svc Clients) authenticateNotionUser(redirectUri, code string) (*notionMode
 	return notionOauthToken, nil
 }
 
-func (svc Clients) GetOwnUser(oidcUser model.OidcUser) (*model.IamUserNotionUser, error) {
+func (svc Clients) GetOwnUser(oidcUser model.OidcUser) (*model.GNFUser, error) {
 	return svc.db.dao.GetUserDataByIamUserId(oidcUser.Sub)
 }

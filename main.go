@@ -7,6 +7,7 @@ import (
 	"Notion-Forms/pkg/cache"
 	"Notion-Forms/pkg/iam"
 	"Notion-Forms/pkg/logging"
+	googleDrive "Notion-Forms/pkg/storage/google-drive"
 	"context"
 	"fmt"
 	"github.com/joho/godotenv"
@@ -70,7 +71,12 @@ func main() {
 		log.Fatal("error when starting iam-client: " + err.Error())
 	}
 
-	svc := service.New(context.Background(), dbClient, dbName, cacheClient, loggingClient, iamClient)
+	googleDriveStorage, err := createGoogleDriveClient()
+	if err != nil {
+		log.Fatal("error when starting google-drive-storage-client: " + err.Error())
+	}
+
+	svc := service.New(context.Background(), dbClient, dbName, cacheClient, loggingClient, iamClient, googleDriveStorage)
 
 	apiConfig, err := getApiConfig()
 	if err != nil {
@@ -205,6 +211,32 @@ func createIamClient() (*iam.Client, error) {
 
 }
 
+func createGoogleDriveClient() (*googleDrive.Client, error) {
+	googleClientId, found := os.LookupEnv("GOOGLE_OAUTH_CLIENT_ID")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'GOOGLE_OAUTH_CLIENT_ID' not found")
+	}
+	googleClientSecret, found := os.LookupEnv("GOOGLE_OAUTH_CLIENT_SECRET")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'GOOGLE_OAUTH_CLIENT_SECRET' not found")
+	}
+	googleRedirectUrl, found := os.LookupEnv("GOOGLE_OAUTH_REDIRECT_URL")
+	if !found {
+		return nil, fmt.Errorf("env-variable 'GOOGLE_OAUTH_REDIRECT_URL' not found")
+	}
+
+	googleDriveClient, err := googleDrive.New(googleDrive.GoogleOauthConfig{
+		ClientId:     googleClientId,
+		ClientSecret: googleClientSecret,
+		RedirectUri:  googleRedirectUrl,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return googleDriveClient, nil
+}
+
 func initConfig() error {
 	err := godotenv.Load()
 	if err != nil {
@@ -256,6 +288,10 @@ func getApiConfig() (*apiV1.ApiConfig, error) {
 	if runMode == "" {
 		return nil, fmt.Errorf("failed to get env-variable: 'NOTION_CLIENT_SECRET'")
 	}
+	notionRedirectUri := os.Getenv("NOTION_REDIRECT_URI")
+	if runMode == "" {
+		return nil, fmt.Errorf("failed to get env-variable: 'NOTION_REDIRECT_URI'")
+	}
 
 	maxPageSize, err := strconv.ParseInt(os.Getenv("APP_MAX_PAGE_SIZE"), 10, 64)
 	if err != nil {
@@ -282,5 +318,6 @@ func getApiConfig() (*apiV1.ApiConfig, error) {
 		OidcClientId:       oidcClientId,
 		NotionClientId:     notionClientId,
 		NotionClientSecret: notionClientSecret,
+		NotionRedirectUri:  notionRedirectUri,
 	}, nil
 }

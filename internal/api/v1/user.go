@@ -11,13 +11,13 @@ import (
 // AuthenticateNotion 		godoc
 // @title           		AuthenticateNotion
 // @description     		Authenticate in Notion with the OAuth code and store the secret together with the IAM and Notion users
-// @Tags 					Notion-Authenticate
+// @Tags 					Notion
 // @Router  				/notion/authenticate [post]
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
 // @Param					OAuthCodeRequest	body 		model.OAuthCodeRequest 	true 	"RecordRequest"
-// @Success      			200  				{object} 	model.HttpError
+// @Success      			200  				{object} 	nil
 // @Failure      			400  				{object} 	model.HttpError
 // @Failure      			404  				{object} 	model.HttpError
 // @Failure      			500  				{object} 	model.HttpError

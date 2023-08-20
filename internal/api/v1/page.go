@@ -7,6 +7,18 @@ import (
 	"net/http"
 )
 
+// ListPages 				godoc
+// @title           		ListPages
+// @description     		Return a list of all own pages, where you have given access to it
+// @Tags 					Notion
+// @Router  				/notion/page [get]
+// @Accept 					json
+// @Produce					json
+// @Security				Bearer
+// @Success      			200  				{object} 	[]*notion.Page
+// @Failure      			400  				{object} 	model.HttpError
+// @Failure      			404  				{object} 	model.HttpError
+// @Failure      			500  				{object} 	model.HttpError
 func ListPages(c *gin.Context) {
 	svc, _, _, err := getConfigAndService(c)
 	if err != nil {
@@ -23,6 +35,19 @@ func ListPages(c *gin.Context) {
 	c.JSON(http.StatusOK, pages)
 }
 
+// GetPage 					godoc
+// @title           		GetPage
+// @description     		Get a Notion page by id
+// @Tags 					Notion
+// @Router  				/notion/page/{pageId} [get]
+// @Param        			pageId    			path     	string  			true  		"pageId"
+// @Accept 					json
+// @Produce					json
+// @Security				Bearer
+// @Success      			200  				{object} 	notion.Page
+// @Failure      			400  				{object} 	model.HttpError
+// @Failure      			404  				{object} 	model.HttpError
+// @Failure      			500  				{object} 	model.HttpError
 func GetPage(c *gin.Context) {
 	svc, _, _, err := getConfigAndService(c)
 	if err != nil {

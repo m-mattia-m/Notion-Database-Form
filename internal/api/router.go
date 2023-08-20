@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// TODO: consider if the individual routing groups should not be called directly under `apiV1`, but e.g. `apiV1.notion.List()`
+
 func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 	r := gin.Default()
 	r.Use(sentrygin.New(sentrygin.Options{}))
@@ -38,6 +40,13 @@ func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 				//notionDatabases.DELETE("/cache", apiV1.DeleteDatabaseListFromCache)
 				//notionDatabases.DELETE("/:id/cache", apiV1.DeleteDatabaseFromCache)
 			}
+		}
+		storageGroup := v1.Group("/storage", Authenticate)
+		{
+			storageGroup.POST("/authenticate/google", apiV1.AuthenticateGoogleDrive)
+			storageGroup.POST("/provider/:databaseId", apiV1.SetStorageProvider)
+			storageGroup.POST("/path/:databaseId", apiV1.SetBaseStoragePath)
+			storageGroup.POST("/upload/:databaseId", apiV1.UploadFile)
 		}
 	}
 	err := r.Run(":3001")

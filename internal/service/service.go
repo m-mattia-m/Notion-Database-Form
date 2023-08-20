@@ -8,6 +8,7 @@ import (
 	"Notion-Forms/pkg/logging"
 	"Notion-Forms/pkg/notion"
 	notionModel "Notion-Forms/pkg/notion/model"
+	googleDrive "Notion-Forms/pkg/storage/google-drive"
 	"context"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -16,11 +17,16 @@ import (
 )
 
 type Clients struct {
-	notion *notion.Client
-	cache  *cache.LRUCache
-	db     *Db
-	logger *logging.Client
-	iam    *iam.Client
+	notion  *notion.Client
+	cache   *cache.LRUCache
+	db      *Db
+	logger  *logging.Client
+	iam     *iam.Client
+	storage *StorageClients
+}
+
+type StorageClients struct {
+	googleDrive *googleDrive.Client
 }
 
 type Service interface {
@@ -29,7 +35,7 @@ type Service interface {
 	ConnectIamUserWithNotionUser(iamUserId, redirectUri, code string) error
 	SetAbortResponse(c *gin.Context, targetServiceName string, method string, message string, err error) string
 	SetAbortWithoutResponse(targetServiceName string, method string, message string, err error) string
-	GetOwnUser(oidcUser model.OidcUser) (*model.IamUserNotionUser, error)
+	GetOwnUser(oidcUser model.OidcUser) (*model.GNFUser, error)
 	GetMe() (*notionModel.User, error)
 	ListDatabases() ([]*notionapi.Database, error)
 	GetDatabase(id string) (notionapi.Database, error)
@@ -45,7 +51,15 @@ type Db struct {
 	dao *dao.Dao
 }
 
-func New(ctx context.Context, db *mongo.Client, dbName string, cache *cache.LRUCache, logger *logging.Client, iam *iam.Client) Service {
+func New(
+	ctx context.Context,
+	db *mongo.Client,
+	dbName string,
+	cache *cache.LRUCache,
+	logger *logging.Client,
+	iam *iam.Client,
+	googleDrive *googleDrive.Client,
+) Service {
 	return Clients{
 		notion: nil,
 		cache:  cache,
@@ -55,6 +69,9 @@ func New(ctx context.Context, db *mongo.Client, dbName string, cache *cache.LRUC
 		},
 		logger: logger,
 		iam:    iam,
+		storage: &StorageClients{
+			googleDrive: googleDrive,
+		},
 	}
 }
 

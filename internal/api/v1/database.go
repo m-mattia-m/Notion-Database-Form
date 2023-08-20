@@ -11,7 +11,7 @@ import (
 // ListDatabases 			godoc
 // @title           		ListDatabases
 // @description     		Return a list of all own databases, where you have given access to it
-// @Tags 					Notion-Databases
+// @Tags 					Notion
 // @Router  				/notion/database [get]
 // @Accept 					json
 // @Produce					json
@@ -44,13 +44,13 @@ func ListDatabases(c *gin.Context) {
 // GetDatabase 				godoc
 // @title           		GetDatabase
 // @description     		Return a own databases, where you have given access to it
-// @Tags 					Notion-Databases
+// @Tags 					Notion
 // @Router  				/notion/database/{databaseId} [get]
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
 // @Param        			databaseId    path     string  true  "databaseId"
-// @Success      			200  {object} model.HttpError
+// @Success      			200  {object} notion.Database
 // @Failure      			400  {object} model.HttpError
 // @Failure      			404  {object} model.HttpError
 // @Failure      			500  {object} model.HttpError
@@ -80,14 +80,14 @@ func GetDatabase(c *gin.Context) {
 // CreateRecord 			godoc
 // @title           		CreateRecord
 // @description     		Return a own databases, where you have given access to it
-// @Tags 					Notion-Databases
+// @Tags 					Notion
 // @Router  				/notion/database/{databaseId} [post]
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
 // @Param        			databaseId    	path     	string  				true  	"databaseId"
 // @Param					RecordRequest 	body 		[]model.RecordRequest 	true 	"RecordRequest"
-// @Success      			200  			{object} 	model.HttpError
+// @Success      			200  			{object} 	notion.Page
 // @Failure      			400  			{object} 	model.HttpError
 // @Failure      			404  			{object} 	model.HttpError
 // @Failure      			500  			{object} 	model.HttpError
@@ -130,7 +130,7 @@ func CreateRecord(c *gin.Context) {
 // GetDatabasePropertiesById 	godoc
 // @title           			GetDatabasePropertiesById
 // @description     			Return the properties of a database by id
-// @Tags 						Notion-Databases
+// @Tags 						Notion
 // @Router  					/notion/database/{databaseId}/properties [get]
 // @Accept 						json
 // @Produce						json
@@ -168,13 +168,13 @@ func GetDatabasePropertiesById(c *gin.Context) {
 // ListAllSelectOptions 	godoc
 // @title           		ListAllSelectOptions
 // @description     		Return a list of all select options from a database by their id, where you have given access to it
-// @Tags 					Notion-Databases
+// @Tags 					Notion
 // @Router  				/notion/database/{databaseId}/properties/options [get]
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
 // @Param        			databaseId    	path     	string  				true  	"databaseId"
-// @Success      			200  			{object} 	model.HttpError
+// @Success      			200  			{object} 	[]notionModel.Select
 // @Failure      			400  			{object} 	model.HttpError
 // @Failure      			404  			{object} 	model.HttpError
 // @Failure      			500  			{object} 	model.HttpError
@@ -203,14 +203,14 @@ func ListAllSelectOptions(c *gin.Context) {
 // ListSelectOptions	 	godoc
 // @title           		ListSelectOptions
 // @description     		Return a list of all select options from a database by their id, where you have given access to it
-// @Tags 					Notion-Databases
+// @Tags 					Notion
 // @Router  				/notion/database/{databaseId}/properties/options/{notionSelectId} [get]
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
 // @Param        			databaseId    	path     	string  				true  	"databaseId"
 // @Param        			notionSelectId  path     	string  				true  	"notionSelectId"
-// @Success      			200  			{object} 	model.HttpError
+// @Success      			200  			{object} 	[]notionModel.Select
 // @Failure      			400  			{object} 	model.HttpError
 // @Failure      			404  			{object} 	model.HttpError
 // @Failure      			500  			{object} 	model.HttpError
@@ -239,5 +239,5 @@ func ListSelectOptions(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusBadRequest, options)
+	c.JSON(http.StatusOK, options)
 }

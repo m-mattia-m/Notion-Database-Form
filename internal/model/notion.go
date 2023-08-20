@@ -20,7 +20,7 @@ type StorePageObject struct {
 	RelevanceScore int         `json:"relevance_score"`
 	Object         notion.Page `json:"object"`
 }
-type IamUserNotionUser struct {
+type GNFUser struct {
 	IamUserId    string `json:"iam_id"`
 	NotionUserId string `json:"notion_user_id"`
 	NotionBotId  string `json:"notion_bot_id"`
@@ -29,6 +29,7 @@ type IamUserNotionUser struct {
 	// conclusions, because this would be a big security risk.
 	// https://developers.notion.com/docs/authorization#step-5-the-integration-stores-the-access_token-for-future-requests
 	NotionAccessToken string `json:"-"`
+	GoogleAccessToken string `json:"-"`
 }
 type OAuthCodeRequest struct {
 	Code string `json:"code"`
@@ -46,16 +47,7 @@ type DatabasePropertyResponse struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 	Type string `json:"type"`
-	//Value map[string]interface{} `json:"value"`
-	//SelectOptions []DatabasePropertySelectOptions `json:"select_options"`
 }
-
-//type DatabasePropertyMap struct {
-//	Id   string `json:"id"`
-//	Type string `json:"type"`
-//	//Value map[string]interface{} `json:"value"`
-//	//SelectOptions []DatabasePropertySelectOptions `json:"select_options"`
-//}
 
 type DatabasePropertySelectOptions struct {
 	Id   string `json:"id"`
