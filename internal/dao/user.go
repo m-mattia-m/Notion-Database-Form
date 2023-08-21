@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/oauth2"
+	"time"
 )
 
 func (svc *Dao) ConnectIamUserWithNotionUser(iamUserId, notionUserId, notionBotId, notionOauthAccessToken string) error {
@@ -22,9 +24,9 @@ func (svc *Dao) ConnectIamUserWithNotionUser(iamUserId, notionUserId, notionBotI
 		gnfUser.IamUserId = iamUserId
 	}
 
-	gnfUser.NotionUserId = notionUserId
-	gnfUser.NotionBotId = notionBotId
-	gnfUser.NotionAccessToken = notionOauthAccessToken
+	gnfUser.NotionCredentials.UserId = notionUserId
+	gnfUser.NotionCredentials.BotId = notionBotId
+	gnfUser.NotionCredentials.AccessToken = notionOauthAccessToken
 
 	// If the record was found and no error occurs
 	if err == nil {
@@ -44,7 +46,14 @@ func (svc *Dao) ConnectIamUserWithNotionUser(iamUserId, notionUserId, notionBotI
 	return nil
 }
 
-func (svc *Dao) ConnectIamUserWithGoogleUser(iamUserId, googleOauthAccessToken string) error {
+func (svc *Dao) ConnectIamUserWithGoogleUser(
+	iamUserId,
+	oAuthAccessToken,
+	oAuthRefreshToken,
+	oAuthTokenType string,
+	oAuthExpiresIn time.Time,
+	oAuthConfig oauth2.Config,
+) error {
 	filter := bson.M{"iamuserid": iamUserId}
 	var gnfUser model.GNFUser
 	err := svc.engine.Database(svc.dbName).Collection("users").FindOne(context.Background(), filter).Decode(&gnfUser)
@@ -58,7 +67,11 @@ func (svc *Dao) ConnectIamUserWithGoogleUser(iamUserId, googleOauthAccessToken s
 		gnfUser.IamUserId = iamUserId
 	}
 
-	gnfUser.GoogleAccessToken = googleOauthAccessToken
+	gnfUser.GoogleCredentials.AccessToken = oAuthAccessToken
+	gnfUser.GoogleCredentials.RefreshToken = oAuthRefreshToken
+	gnfUser.GoogleCredentials.Config = oAuthConfig
+	gnfUser.GoogleCredentials.TokenType = oAuthTokenType
+	gnfUser.GoogleCredentials.ExpiresIn = oAuthExpiresIn
 
 	// If the record was found and no error occurs
 	if err == nil {

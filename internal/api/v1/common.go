@@ -50,7 +50,7 @@ func SetService(svc service.Service, cfg ApiConfig) gin.HandlerFunc {
 				return
 			}
 
-			notionClient, err = notion.New(iamUserData.NotionAccessToken, iamUserData.NotionAccessToken, cfg.NotionClientId, cfg.NotionRedirectUri)
+			notionClient, err = notion.New(iamUserData.NotionCredentials.AccessToken, iamUserData.NotionCredentials.AccessToken, cfg.NotionClientId, cfg.NotionRedirectUri)
 			if err != nil {
 				svc.SetAbortResponse(c, "notion", "New", fmt.Sprintf("faield to create notion client"), err)
 				return

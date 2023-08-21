@@ -11,13 +11,17 @@ func (sp *StorageProvider) ToString() string {
 type Storage struct {
 	DatabaseId      string          `json:"database_id"`
 	StorageProvider StorageProvider `json:"storage_provider"`
-	StorePath       string          `json:"store_path"`
+	ParentFolderId  string          `json:"parent_folder_id"`
 }
 
 type StorageProviderRequest struct {
 	StorageProvider string `json:"store_provider"`
 }
 
-type StoragePathRequest struct {
-	StoragePath string `json:"storage_path"`
+type StorageLocationRequest struct {
+	ParentFolderId string `json:"parent_folder_id"`
+}
+
+type FileUploadResponse struct {
+	Url string `json:"url"`
 }

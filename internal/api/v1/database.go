@@ -116,7 +116,7 @@ func CreateRecord(c *gin.Context) {
 		return
 	}
 
-	project, err := svc.CreateRecord(databaseId, userData.NotionUserId, recordRequest)
+	project, err := svc.CreateRecord(databaseId, userData.NotionCredentials.UserId, recordRequest)
 	if err != nil {
 		svc.SetAbortResponse(c, "svc", "CreateRecord", fmt.Sprintf("failed to create notion-database record"), err)
 		return

@@ -42,7 +42,7 @@ func (svc *Dao) SetProvider(databaseId string, provider model.StorageProvider) e
 	return nil
 }
 
-func (svc *Dao) SetPath(databaseId, path string) error {
+func (svc *Dao) SetLocation(databaseId, folderId string) error {
 	filter := bson.M{"databaseid": databaseId}
 	var formsStorage model.Storage
 	err := svc.engine.Database(svc.dbName).Collection("forms").FindOne(context.Background(), filter).Decode(&formsStorage)
@@ -56,7 +56,7 @@ func (svc *Dao) SetPath(databaseId, path string) error {
 		formsStorage.DatabaseId = databaseId
 	}
 
-	formsStorage.StorePath = path
+	formsStorage.ParentFolderId = folderId
 
 	// If the record was found and no error occurs
 	if err == nil {
@@ -88,7 +88,7 @@ func (svc *Dao) GetProvider(databaseId string) (*string, error) {
 	return &provider, nil
 }
 
-func (svc *Dao) GetPath(databaseId string) (*string, error) {
+func (svc *Dao) GetStorageFolderId(databaseId string) (*string, error) {
 	filter := bson.M{"databaseid": databaseId}
 	var formsStorage model.Storage
 	err := svc.engine.Database(svc.dbName).Collection("forms").FindOne(context.Background(), filter).Decode(&formsStorage)
@@ -96,5 +96,5 @@ func (svc *Dao) GetPath(databaseId string) (*string, error) {
 		return nil, err
 	}
 
-	return &formsStorage.StorePath, nil
+	return &formsStorage.ParentFolderId, nil
 }

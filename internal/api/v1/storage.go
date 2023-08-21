@@ -46,7 +46,7 @@ func AuthenticateGoogleDrive(c *gin.Context) {
 
 // SetStorageProvider 		godoc
 // @title           		SetStorageProvider
-// @description     		Set the base-path where the uploaded files should be stored
+// @description     		Set the provider (googleDrive, MicrosoftOneDrive, Dropbox) where the uploaded files should be stored
 // @Tags 					Storage
 // @Router  				/storage/provider/{databaseId} [post]
 // @Accept 					json
@@ -91,21 +91,21 @@ func SetStorageProvider(c *gin.Context) {
 	c.JSON(http.StatusOK, nil)
 }
 
-// SetBaseStoragePath	 	godoc
-// @title           		SetBaseStoragePath
-// @description     		Set the base-path where the uploaded files should be stored
+// SetBaseStorageLocation 	godoc
+// @title           		SetBaseStorageLocation
+// @description     		Set the folderId where the uploaded files should be stored
 // @Tags 					Storage
-// @Router  				/storage/path/{databaseId} [post]
+// @Router  				/storage/location/{databaseId} [post]
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
-// @Param        			databaseId    			path     		string  					true  	"databaseId"
-// @Param					StoragePathRequest	 	body 			[]model.StoragePathRequest 	true 	"StoragePathRequest"
+// @Param        			databaseId    			path     		string  						true  	"databaseId"
+// @Param					StorageLocationRequest	body 			model.StorageLocationRequest 	true 	"StorageLocationRequest"
 // @Success      			200  					{object} 		nil
 // @Failure      			400  					{object} 		model.HttpError
 // @Failure      			404  					{object} 		model.HttpError
 // @Failure      			500  					{object} 		model.HttpError
-func SetBaseStoragePath(c *gin.Context) {
+func SetBaseStorageLocation(c *gin.Context) {
 	svc, _, _, err := getConfigAndService(c)
 	if err != nil {
 		helper.SetBadRequestResponse(c, fmt.Sprintf("failed to get config and service, contact the administrator"))
@@ -117,15 +117,15 @@ func SetBaseStoragePath(c *gin.Context) {
 		helper.SetBadRequestResponse(c, fmt.Sprintf("database-id is required"))
 	}
 
-	var storagePathRequest model.StoragePathRequest
-	if err := c.BindJSON(&storagePathRequest); err != nil {
-		helper.SetBadRequestResponse(c, fmt.Sprintf("storage-path-request-body can't bind to a object and is required"))
+	var storageLocationRequest model.StorageLocationRequest
+	if err := c.BindJSON(&storageLocationRequest); err != nil {
+		helper.SetBadRequestResponse(c, fmt.Sprintf("storage-location-request-body can't bind to a object and is required"))
 		return
 	}
 
-	err = svc.SetStoragePath(databaseId, storagePathRequest.StoragePath)
+	err = svc.SetStorageLocation(databaseId, storageLocationRequest.ParentFolderId)
 	if err != nil {
-		svc.SetAbortResponse(c, "svc", "SetStoragePath", fmt.Sprintf("failed to save the path"), err)
+		svc.SetAbortResponse(c, "svc", "SetStorageLocation", fmt.Sprintf("failed to save the folder-id"), err)
 		return
 	}
 
@@ -142,12 +142,12 @@ func SetBaseStoragePath(c *gin.Context) {
 // @Security				Bearer
 // @Param        			databaseId    			path     		string  					true  	"databaseId"
 // @Param        			file    				formData 		file 						true  	"File"
-// @Success      			200  					{object} 		nil
+// @Success      			200  					{object} 		model.FileUploadResponse
 // @Failure      			400  					{object} 		model.HttpError
 // @Failure      			404  					{object} 		model.HttpError
 // @Failure      			500  					{object} 		model.HttpError
 func UploadFile(c *gin.Context) {
-	svc, _, _, err := getConfigAndService(c)
+	svc, _, oidcUser, err := getConfigAndService(c)
 	if err != nil {
 		helper.SetBadRequestResponse(c, fmt.Sprintf("failed to get config and service, contact the administrator"))
 		return
@@ -165,11 +165,13 @@ func UploadFile(c *gin.Context) {
 		return
 	}
 
-	err = svc.UploadFile(databaseId, file)
+	fileUrl, err := svc.UploadFile(oidcUser.Sub, databaseId, file)
 	if err != nil {
 		svc.SetAbortResponse(c, "svc", "UploadFile", fmt.Sprintf("failed to store the file"), err)
 		return
 	}
 
-	c.JSON(http.StatusOK, nil)
+	c.JSON(http.StatusOK, model.FileUploadResponse{
+		Url: *fileUrl,
+	})
 }

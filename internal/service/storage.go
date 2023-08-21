@@ -9,12 +9,19 @@ import (
 )
 
 func (svc Clients) ConnectIamUserWithGoogleUser(iamUserId, code string) error {
-	oidcGoogleUser, err := svc.authenticateGoogleUser(code)
+	oAuthGoogleUser, err := svc.authenticateGoogleUser(code)
 	if err != nil {
 		return err
 	}
 
-	err = svc.db.dao.ConnectIamUserWithGoogleUser(iamUserId, oidcGoogleUser.AccessToken)
+	err = svc.db.dao.ConnectIamUserWithGoogleUser(
+		iamUserId,
+		oAuthGoogleUser.AccessToken,
+		oAuthGoogleUser.RefreshToken,
+		oAuthGoogleUser.TokenType,
+		oAuthGoogleUser.ExpiresIn,
+		oAuthGoogleUser.Config,
+	)
 	if err != nil {
 		return err
 	}
@@ -22,7 +29,7 @@ func (svc Clients) ConnectIamUserWithGoogleUser(iamUserId, code string) error {
 	return nil
 }
 
-func (svc Clients) authenticateGoogleUser(code string) (*googleDrive.GoogleOauthToken, error) {
+func (svc Clients) authenticateGoogleUser(code string) (*googleDrive.GoogleOauthTokenConfig, error) {
 	googleOauthToken, err := svc.storage.googleDrive.Authenticate(code)
 	if err != nil {
 		return nil, err
@@ -34,32 +41,43 @@ func (svc Clients) SetStorageProvider(databaseId string, provider model.StorageP
 	return svc.db.dao.SetProvider(databaseId, provider)
 }
 
-func (svc Clients) SetStoragePath(databaseId, path string) error {
-	return svc.db.dao.SetPath(databaseId, path)
+func (svc Clients) SetStorageLocation(databaseId, folderId string) error {
+	return svc.db.dao.SetLocation(databaseId, folderId)
 }
 
 func (svc Clients) GetStorageProvider(databaseId string) (*string, error) {
 	return svc.db.dao.GetProvider(databaseId)
 }
 
-func (svc Clients) GetStoragePath(databaseId string) (*string, error) {
-	return svc.db.dao.GetPath(databaseId)
+func (svc Clients) GetStorageFolderId(databaseId string) (*string, error) {
+	return svc.db.dao.GetStorageFolderId(databaseId)
 }
 
-func (svc Clients) UploadFile(databaseId string, file *multipart.FileHeader) error {
+func (svc Clients) UploadFile(oidcUserId, databaseId string, file *multipart.FileHeader) (*string, error) {
 	provider, err := svc.GetStorageProvider(databaseId)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	path, err := svc.GetStoragePath(databaseId)
+	parentFolderId, err := svc.GetStorageFolderId(databaseId)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	credentials, err := svc.db.dao.GetUserDataByIamUserId(oidcUserId)
+	if err != nil {
+		return nil, err
 	}
 
 	switch model.StorageProvider(*provider) {
 	case config.GoogleDrive:
-		return svc.storage.googleDrive.UploadFile(*path, file)
+		return svc.storage.googleDrive.UploadFile(googleDrive.GoogleOauthTokenConfig{
+			Config:       credentials.GoogleCredentials.Config,
+			AccessToken:  credentials.GoogleCredentials.AccessToken,
+			RefreshToken: credentials.GoogleCredentials.RefreshToken,
+			ExpiresIn:    credentials.GoogleCredentials.ExpiresIn,
+			TokenType:    credentials.GoogleCredentials.TokenType,
+		}, *parentFolderId, file)
 	default:
-		return fmt.Errorf("invalid storage provider: %v", model.StorageProvider(*provider))
+		return nil, fmt.Errorf("invalid storage provider: %v", model.StorageProvider(*provider))
 	}
 }

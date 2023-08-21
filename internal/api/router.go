@@ -45,7 +45,7 @@ func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 		{
 			storageGroup.POST("/authenticate/google", apiV1.AuthenticateGoogleDrive)
 			storageGroup.POST("/provider/:databaseId", apiV1.SetStorageProvider)
-			storageGroup.POST("/path/:databaseId", apiV1.SetBaseStoragePath)
+			storageGroup.POST("/location/:databaseId", apiV1.SetBaseStorageLocation)
 			storageGroup.POST("/upload/:databaseId", apiV1.UploadFile)
 		}
 	}
