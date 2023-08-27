@@ -1,0 +1,923 @@
+basePath: /api/v1
+definitions:
+  model.DatabasePropertyResponse:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  model.FileUploadResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  model.HttpError:
+    properties:
+      message:
+        type: string
+    type: object
+  model.MinimalistDatabase:
+    properties:
+      created_time:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+      url:
+        type: string
+    type: object
+  model.OAuthCodeRequest:
+    properties:
+      code:
+        type: string
+    type: object
+  model.Option:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  model.RecordRequest:
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      value: {}
+    type: object
+  model.Select:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      options:
+        items:
+          $ref: '#/definitions/model.Option'
+        type: array
+      type:
+        type: string
+    type: object
+  model.StorageLocationRequest:
+    properties:
+      parent_folder_id:
+        type: string
+    type: object
+  model.StorageProviderRequest:
+    properties:
+      store_provider:
+        type: string
+    type: object
+  notionapi.Annotations:
+    properties:
+      bold:
+        type: boolean
+      code:
+        type: boolean
+      color:
+        $ref: '#/definitions/notionapi.Color'
+      italic:
+        type: boolean
+      strikethrough:
+        type: boolean
+      underline:
+        type: boolean
+    type: object
+  notionapi.Bot:
+    properties:
+      owner:
+        $ref: '#/definitions/notionapi.Owner'
+      workspace_name:
+        type: string
+    type: object
+  notionapi.Color:
+    enum:
+    - default
+    - gray
+    - brown
+    - orange
+    - yellow
+    - green
+    - blue
+    - purple
+    - pink
+    - red
+    - default_background
+    - gray_background
+    - brown_background
+    - orange_background
+    - yellow_background
+    - green_background
+    - blue_background
+    - purple_background
+    - pink_background
+    - red_background
+    type: string
+    x-enum-varnames:
+    - ColorDefault
+    - ColorGray
+    - ColorBrown
+    - ColorOrange
+    - ColorYellow
+    - ColorGreen
+    - ColorBlue
+    - ColorPurple
+    - ColorPink
+    - ColorRed
+    - ColorDefaultBackground
+    - ColorGrayBackground
+    - ColorBrownBackground
+    - ColorOrangeBackground
+    - ColorYellowBackground
+    - ColorGreenBackground
+    - ColorBlueBackground
+    - ColorPurpleBackground
+    - ColorPinkBackground
+    - ColorRedBackground
+  notionapi.Database:
+    properties:
+      archived:
+        type: boolean
+      cover:
+        $ref: '#/definitions/notionapi.Image'
+      created_by:
+        $ref: '#/definitions/notionapi.User'
+      created_time:
+        type: string
+      description:
+        items:
+          $ref: '#/definitions/notionapi.RichText'
+        type: array
+      icon:
+        $ref: '#/definitions/notionapi.Icon'
+      id:
+        type: string
+      is_inline:
+        type: boolean
+      last_edited_by:
+        $ref: '#/definitions/notionapi.User'
+      last_edited_time:
+        type: string
+      object:
+        $ref: '#/definitions/notionapi.ObjectType'
+      parent:
+        $ref: '#/definitions/notionapi.Parent'
+      properties:
+        allOf:
+        - $ref: '#/definitions/notionapi.PropertyConfigs'
+        description: Properties is a map of property configurations that defines what
+          Page.Properties each page of the database can use
+      title:
+        items:
+          $ref: '#/definitions/notionapi.RichText'
+        type: array
+      url:
+        type: string
+    type: object
+  notionapi.DatabaseMention:
+    properties:
+      id:
+        type: string
+    type: object
+  notionapi.DateObject:
+    properties:
+      end:
+        type: string
+      start:
+        type: string
+    type: object
+  notionapi.Equation:
+    properties:
+      expression:
+        type: string
+    type: object
+  notionapi.FileObject:
+    properties:
+      expiry_time:
+        type: string
+      url:
+        type: string
+    type: object
+  notionapi.FileType:
+    enum:
+    - file
+    - external
+    type: string
+    x-enum-varnames:
+    - FileTypeFile
+    - FileTypeExternal
+  notionapi.Icon:
+    properties:
+      emoji:
+        type: string
+      external:
+        $ref: '#/definitions/notionapi.FileObject'
+      file:
+        $ref: '#/definitions/notionapi.FileObject'
+      type:
+        $ref: '#/definitions/notionapi.FileType'
+    type: object
+  notionapi.Image:
+    properties:
+      caption:
+        items:
+          $ref: '#/definitions/notionapi.RichText'
+        type: array
+      external:
+        $ref: '#/definitions/notionapi.FileObject'
+      file:
+        $ref: '#/definitions/notionapi.FileObject'
+      type:
+        $ref: '#/definitions/notionapi.FileType'
+    type: object
+  notionapi.Link:
+    properties:
+      url:
+        type: string
+    type: object
+  notionapi.Mention:
+    properties:
+      database:
+        $ref: '#/definitions/notionapi.DatabaseMention'
+      date:
+        $ref: '#/definitions/notionapi.DateObject'
+      page:
+        $ref: '#/definitions/notionapi.PageMention'
+      template_mention:
+        $ref: '#/definitions/notionapi.TemplateMention'
+      type:
+        $ref: '#/definitions/notionapi.MentionType'
+      user:
+        $ref: '#/definitions/notionapi.User'
+    type: object
+  notionapi.MentionType:
+    enum:
+    - database
+    - page
+    - user
+    - date
+    - template_mention
+    type: string
+    x-enum-varnames:
+    - MentionTypeDatabase
+    - MentionTypePage
+    - MentionTypeUser
+    - MentionTypeDate
+    - MentionTypeTemplateMention
+  notionapi.ObjectType:
+    enum:
+    - database
+    - block
+    - page
+    - list
+    - text
+    - user
+    - error
+    - comment
+    type: string
+    x-enum-varnames:
+    - ObjectTypeDatabase
+    - ObjectTypeBlock
+    - ObjectTypePage
+    - ObjectTypeList
+    - ObjectTypeText
+    - ObjectTypeUser
+    - ObjectTypeError
+    - ObjectTypeComment
+  notionapi.Owner:
+    properties:
+      type:
+        type: string
+      workspace:
+        type: boolean
+    type: object
+  notionapi.Page:
+    properties:
+      archived:
+        type: boolean
+      cover:
+        $ref: '#/definitions/notionapi.Image'
+      created_by:
+        $ref: '#/definitions/notionapi.User'
+      created_time:
+        type: string
+      icon:
+        $ref: '#/definitions/notionapi.Icon'
+      id:
+        type: string
+      last_edited_by:
+        $ref: '#/definitions/notionapi.User'
+      last_edited_time:
+        type: string
+      object:
+        $ref: '#/definitions/notionapi.ObjectType'
+      parent:
+        $ref: '#/definitions/notionapi.Parent'
+      properties:
+        $ref: '#/definitions/notionapi.Properties'
+      public_url:
+        type: string
+      url:
+        type: string
+    type: object
+  notionapi.PageMention:
+    properties:
+      id:
+        type: string
+    type: object
+  notionapi.Parent:
+    properties:
+      block_id:
+        type: string
+      database_id:
+        type: string
+      page_id:
+        type: string
+      type:
+        $ref: '#/definitions/notionapi.ParentType'
+      workspace:
+        type: boolean
+    type: object
+  notionapi.ParentType:
+    enum:
+    - database_id
+    - page_id
+    - workspace
+    - block_id
+    type: string
+    x-enum-varnames:
+    - ParentTypeDatabaseID
+    - ParentTypePageID
+    - ParentTypeWorkspace
+    - ParentTypeBlockID
+  notionapi.Person:
+    properties:
+      email:
+        type: string
+    type: object
+  notionapi.Properties:
+    additionalProperties: {}
+    type: object
+  notionapi.PropertyConfigs:
+    additionalProperties: {}
+    type: object
+  notionapi.RichText:
+    properties:
+      annotations:
+        $ref: '#/definitions/notionapi.Annotations'
+      equation:
+        $ref: '#/definitions/notionapi.Equation'
+      href:
+        type: string
+      mention:
+        $ref: '#/definitions/notionapi.Mention'
+      plain_text:
+        type: string
+      text:
+        $ref: '#/definitions/notionapi.Text'
+      type:
+        $ref: '#/definitions/notionapi.ObjectType'
+    type: object
+  notionapi.TemplateMention:
+    properties:
+      template_mention_date:
+        type: string
+      template_mention_user:
+        type: string
+      type:
+        $ref: '#/definitions/notionapi.TemplateMentionType'
+    type: object
+  notionapi.TemplateMentionType:
+    enum:
+    - template_mention_user
+    - template_mention_date
+    type: string
+    x-enum-varnames:
+    - TemplateMentionTypeUser
+    - TemplateMentionTypeDate
+  notionapi.Text:
+    properties:
+      content:
+        type: string
+      link:
+        $ref: '#/definitions/notionapi.Link'
+    type: object
+  notionapi.User:
+    properties:
+      avatar_url:
+        type: string
+      bot:
+        $ref: '#/definitions/notionapi.Bot'
+      id:
+        type: string
+      name:
+        type: string
+      object:
+        $ref: '#/definitions/notionapi.ObjectType'
+      person:
+        $ref: '#/definitions/notionapi.Person'
+      type:
+        $ref: '#/definitions/notionapi.UserType'
+    type: object
+  notionapi.UserType:
+    enum:
+    - person
+    - bot
+    type: string
+    x-enum-varnames:
+    - UserTypePerson
+    - UserTypeBot
+host: localhost:8081
+info:
+  contact:
+    email: develop@generated-notion-forms.com
+    name: API Support
+  description: this is the api for generated Notion forms
+  title: Generated Notion Forms
+  version: "1.0"
+paths:
+  /notion/authenticate:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate in Notion with the OAuth code and store the secret
+        together with the IAM and Notion users
+      parameters:
+      - description: RecordRequest
+        in: body
+        name: OAuthCodeRequest
+        required: true
+        schema:
+          $ref: '#/definitions/model.OAuthCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Notion
+  /notion/database:
+    get:
+      consumes:
+      - application/json
+      description: Return a list of all own databases, where you have given access
+        to it
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.MinimalistDatabase'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Notion
+  /notion/database/{databaseId}:
+    get:
+      consumes:
+      - application/json
+      description: Return a own databases, where you have given access to it
+      parameters:
+      - description: databaseId
+        in: path
+        name: databaseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notionapi.Database'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Notion
+    post:
+      consumes:
+      - application/json
+      description: Return a own databases, where you have given access to it
+      parameters:
+      - description: databaseId
+        in: path
+        name: databaseId
+        required: true
+        type: string
+      - description: RecordRequest
+        in: body
+        name: RecordRequest
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/model.RecordRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notionapi.Page'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Notion
+  /notion/database/{databaseId}/properties:
+    get:
+      consumes:
+      - application/json
+      description: Return the properties of a database by id
+      parameters:
+      - description: databaseId
+        in: path
+        name: databaseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.DatabasePropertyResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Notion
+  /notion/database/{databaseId}/properties/options:
+    get:
+      consumes:
+      - application/json
+      description: Return a list of all select options from a database by their id,
+        where you have given access to it
+      parameters:
+      - description: databaseId
+        in: path
+        name: databaseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Select'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Notion
+  /notion/database/{databaseId}/properties/options/{notionSelectId}:
+    get:
+      consumes:
+      - application/json
+      description: Return a list of all select options from a database by their id,
+        where you have given access to it
+      parameters:
+      - description: databaseId
+        in: path
+        name: databaseId
+        required: true
+        type: string
+      - description: notionSelectId
+        in: path
+        name: notionSelectId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Select'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Notion
+  /notion/page:
+    get:
+      consumes:
+      - application/json
+      description: Return a list of all own pages, where you have given access to
+        it
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/notionapi.Page'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Notion
+  /notion/page/{pageId}:
+    get:
+      consumes:
+      - application/json
+      description: Get a Notion page by id
+      parameters:
+      - description: pageId
+        in: path
+        name: pageId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/notionapi.Page'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Notion
+  /storage//authenticate/google:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate in Google Drive with the OAuth code and store the
+        secret together with the IAM, Notion user and Google user
+      parameters:
+      - description: RecordRequest
+        in: body
+        name: OAuthCodeRequest
+        required: true
+        schema:
+          $ref: '#/definitions/model.OAuthCodeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Storage
+  /storage/location/{databaseId}:
+    post:
+      consumes:
+      - application/json
+      description: Set the folderId where the uploaded files should be stored
+      parameters:
+      - description: databaseId
+        in: path
+        name: databaseId
+        required: true
+        type: string
+      - description: StorageLocationRequest
+        in: body
+        name: StorageLocationRequest
+        required: true
+        schema:
+          $ref: '#/definitions/model.StorageLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Storage
+  /storage/provider/{databaseId}:
+    post:
+      consumes:
+      - application/json
+      description: Set the provider (googleDrive, MicrosoftOneDrive, Dropbox) where
+        the uploaded files should be stored
+      parameters:
+      - description: databaseId
+        in: path
+        name: databaseId
+        required: true
+        type: string
+      - description: StorageProviderRequest
+        in: body
+        name: StorageProviderRequest
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/model.StorageProviderRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Storage
+  /storage/upload/{databaseId}:
+    post:
+      consumes:
+      - application/json
+      description: Upload a file
+      parameters:
+      - description: databaseId
+        in: path
+        name: databaseId
+        required: true
+        type: string
+      - description: File
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.FileUploadResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Storage
+securityDefinitions:
+  Bearer:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -15,7 +15,7 @@ import (
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
-// @Success      			200  				{object} 	[]*notion.Page
+// @Success      			200  				{object} 	[]notionapi.Page
 // @Failure      			400  				{object} 	model.HttpError
 // @Failure      			404  				{object} 	model.HttpError
 // @Failure      			500  				{object} 	model.HttpError
@@ -44,7 +44,7 @@ func ListPages(c *gin.Context) {
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
-// @Success      			200  				{object} 	notion.Page
+// @Success      			200  				{object} 	notionapi.Page
 // @Failure      			400  				{object} 	model.HttpError
 // @Failure      			404  				{object} 	model.HttpError
 // @Failure      			500  				{object} 	model.HttpError

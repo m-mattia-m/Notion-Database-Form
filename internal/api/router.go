@@ -3,7 +3,9 @@ package api
 import (
 	apiV1 "Notion-Forms/internal/api/v1"
 	"Notion-Forms/internal/service"
+	"fmt"
 	sentrygin "github.com/getsentry/sentry-go/gin"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,6 +16,19 @@ func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 	r.Use(sentrygin.New(sentrygin.Options{}))
 	r.Use(apiV1.SetService(svc, apiConfig))
 	r.Use(apiV1.SetApiConfig(apiConfig))
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"}, // apiConfig.FrontendHost, apiConfig.Host
+		AllowMethods:     []string{"*"}, // "GET", "POST", "PUT", "DELETE", "OPTIONS"
+		AllowHeaders:     []string{"*"}, // "Authorization", "Origin", "Content-Type", "Accept"
+		ExposeHeaders:    []string{"*"}, // "Content-Length"
+		AllowCredentials: true,
+	}))
+
+	if apiConfig.RunMode != "PROD" {
+		fmt.Println(fmt.Sprintf("[HOST]: %s", apiConfig.Host))
+		fmt.Println(fmt.Sprintf("[Swagger]: %s/api/v1/swagger/index.html", apiConfig.Host))
+	}
+
 	v1 := r.Group("/api/v1")
 	{
 		notionGroup := v1.Group("/notion", Authenticate)
@@ -49,6 +64,6 @@ func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 			storageGroup.POST("/upload/:databaseId", apiV1.UploadFile)
 		}
 	}
-	err := r.Run(":3001")
+	err := r.Run(fmt.Sprintf(":%d", apiConfig.Port))
 	return err
 }

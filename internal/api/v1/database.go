@@ -50,7 +50,7 @@ func ListDatabases(c *gin.Context) {
 // @Produce					json
 // @Security				Bearer
 // @Param        			databaseId    path     string  true  "databaseId"
-// @Success      			200  {object} notion.Database
+// @Success      			200  {object} notionapi.Database
 // @Failure      			400  {object} model.HttpError
 // @Failure      			404  {object} model.HttpError
 // @Failure      			500  {object} model.HttpError
@@ -87,7 +87,7 @@ func GetDatabase(c *gin.Context) {
 // @Security				Bearer
 // @Param        			databaseId    	path     	string  				true  	"databaseId"
 // @Param					RecordRequest 	body 		[]model.RecordRequest 	true 	"RecordRequest"
-// @Success      			200  			{object} 	notion.Page
+// @Success      			200  			{object} 	notionapi.Page
 // @Failure      			400  			{object} 	model.HttpError
 // @Failure      			404  			{object} 	model.HttpError
 // @Failure      			500  			{object} 	model.HttpError
@@ -136,7 +136,7 @@ func CreateRecord(c *gin.Context) {
 // @Produce						json
 // @Security					Bearer
 // @Param        				databaseId    path     string  true  "databaseId"
-// @Success      				200  {object} []model.DatabaseProperty
+// @Success      				200  {object} []model.DatabasePropertyResponse
 // @Failure      				400  {object} model.HttpError
 // @Failure      				404  {object} model.HttpError
 // @Failure      				500  {object} model.HttpError
@@ -174,7 +174,7 @@ func GetDatabasePropertiesById(c *gin.Context) {
 // @Produce					json
 // @Security				Bearer
 // @Param        			databaseId    	path     	string  				true  	"databaseId"
-// @Success      			200  			{object} 	[]notionModel.Select
+// @Success      			200  			{object} 	[]model.Select
 // @Failure      			400  			{object} 	model.HttpError
 // @Failure      			404  			{object} 	model.HttpError
 // @Failure      			500  			{object} 	model.HttpError
@@ -210,7 +210,7 @@ func ListAllSelectOptions(c *gin.Context) {
 // @Security				Bearer
 // @Param        			databaseId    	path     	string  				true  	"databaseId"
 // @Param        			notionSelectId  path     	string  				true  	"notionSelectId"
-// @Success      			200  			{object} 	[]notionModel.Select
+// @Success      			200  			{object} 	[]model.Select
 // @Failure      			400  			{object} 	model.HttpError
 // @Failure      			404  			{object} 	model.HttpError
 // @Failure      			500  			{object} 	model.HttpError
