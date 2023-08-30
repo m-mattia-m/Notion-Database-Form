@@ -12,22 +12,22 @@ import (
 // TODO: consider if the individual routing groups should not be called directly under `apiV1`, but e.g. `apiV1.notion.List()`
 
 func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
-	r := gin.Default()
-	r.Use(sentrygin.New(sentrygin.Options{}))
-	r.Use(apiV1.SetService(svc, apiConfig))
-	r.Use(apiV1.SetApiConfig(apiConfig))
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, // apiConfig.FrontendHost, apiConfig.Host
-		AllowMethods:     []string{"*"}, // "GET", "POST", "PUT", "DELETE", "OPTIONS"
-		AllowHeaders:     []string{"*"}, // "Authorization", "Origin", "Content-Type", "Accept"
-		ExposeHeaders:    []string{"*"}, // "Content-Length"
-		AllowCredentials: true,
-	}))
-
 	if apiConfig.RunMode != "PROD" {
 		fmt.Println(fmt.Sprintf("[HOST]: %s", apiConfig.Host))
 		fmt.Println(fmt.Sprintf("[Swagger]: %s/api/v1/swagger/index.html", apiConfig.Host))
 	}
+
+	r := gin.Default()
+	r.Use(sentrygin.New(sentrygin.Options{}))
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{apiConfig.FrontendHost, apiConfig.Host, "http://localhost:3000"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Authorization", "Origin", "Content-Type", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+	r.Use(apiV1.SetService(svc, apiConfig))
+	r.Use(apiV1.SetApiConfig(apiConfig))
 
 	v1 := r.Group("/api/v1")
 	{

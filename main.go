@@ -43,7 +43,7 @@ const (
 // @scope.profile Default Grants
 // @scope.email Default Grants
 // @scope.roles Default Grants
-// @scope.notion-database-form-notion-database-form-swagger-local
+// @scope.notion-database-form-notion-database-form-swagger-local  Default Grants
 
 func main() {
 	err := initConfig()
