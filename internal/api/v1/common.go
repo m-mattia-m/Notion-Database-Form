@@ -26,33 +26,48 @@ type ApiConfig struct {
 	NotionRedirectUri  string
 }
 
+var noServicePaths = []string{
+	"/readiness",
+	"/liveliness",
+	"/api/v1/swagger",
+	"/swagger",
+	"/api/v1/swagger/doc.json",
+}
+
 func SetService(svc service.Service, cfg ApiConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		notionClient, err := notion.New(cfg.NotionClientSecret, cfg.NotionClientSecret, cfg.NotionClientId, cfg.NotionRedirectUri)
-		if err != nil {
-			svc.SetAbortResponse(c, "notion", "New", fmt.Sprintf("faield to create notion client"), err)
-			return
+		var notionClient *notion.Client
+		var err error
+
+		if strings.Contains(c.FullPath(), "/notion/authenticate") {
+			notionClient, err = notion.New(cfg.NotionClientSecret, cfg.NotionClientSecret, cfg.NotionClientId, cfg.NotionRedirectUri)
+			if err != nil {
+				svc.SetAbortResponse(c, "notion", "New", fmt.Sprintf("internal server error. contact the administrator with the logid"), fmt.Errorf("failed to create notion client -> %s", err))
+				return
+			}
 		}
-		if !strings.Contains(c.FullPath(), "/notion/authenticate") {
+
+		if !strings.Contains(c.FullPath(), "/notion/authenticate") &&
+			!helper.IfArrayElementContainsString(c.FullPath(), noServicePaths) {
 			oidcUser, err := helper.GetUser(c, model.OidcConfig{
 				AppEnv:        cfg.RunMode,
 				OidcAuthority: cfg.OidcAuthority,
 				OidcClientId:  cfg.OidcClientId,
 			})
 			if err != nil {
-				svc.SetAbortResponse(c, "helper", "GetUser", fmt.Sprintf("failed to get user from context"), err)
+				svc.SetAbortResponse(c, "helper", "GetUser", fmt.Sprintf("internal server error. contact the administrator with the logid"), fmt.Errorf("failed to get user from context -> %s", err))
 				return
 			}
 
 			iamUserData, err := svc.GetOwnUser(oidcUser)
 			if err != nil {
-				svc.SetAbortResponse(c, "svc", "GetOwnUser", fmt.Sprintf("faield to get own user"), err)
+				svc.SetAbortResponse(c, "svc", "GetOwnUser", fmt.Sprintf("internal server error. contact the administrator with the logid"), fmt.Errorf("failed to get own user -> %s", err))
 				return
 			}
 
 			notionClient, err = notion.New(iamUserData.NotionCredentials.AccessToken, iamUserData.NotionCredentials.AccessToken, cfg.NotionClientId, cfg.NotionRedirectUri)
 			if err != nil {
-				svc.SetAbortResponse(c, "notion", "New", fmt.Sprintf("faield to create notion client"), err)
+				svc.SetAbortResponse(c, "notion", "New", fmt.Sprintf("internal server error. contact the administrator with the logid"), fmt.Errorf("faield to create notion client -> %s", err))
 				return
 			}
 		}

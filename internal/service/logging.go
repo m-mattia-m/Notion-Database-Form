@@ -9,6 +9,7 @@ import (
 
 type httpError struct {
 	Message string `json:"message"`
+	LogId   string `json:"log_id"`
 }
 
 func (svc Clients) SetAbortResponse(c *gin.Context, targetServiceName string, method string, message string, err error) string {
@@ -20,6 +21,7 @@ func (svc Clients) SetAbortResponse(c *gin.Context, targetServiceName string, me
 	})
 	c.AbortWithStatusJSON(http.StatusInternalServerError, httpError{
 		Message: message,
+		LogId:   logId,
 	})
 	return logId
 }
