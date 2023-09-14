@@ -26,19 +26,14 @@ func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	r := gin.Default()
-	//r.Use(cors.New(cors.Config{
-	//	AllowOrigins: []string{"http://localhost:3000"},
-	//	AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // , "HEAD", "CONNECT", "TRACE", "PATCH"
-	//	AllowHeaders: []string{"Authorization", "Origin", "Content-Type", "Accept"},
-	//	//ExposeHeaders:    []string{"Content-Length"},
-	//	//AllowCredentials: true,
-	//
-	//	//AllowOrigins: []string{"*"},
-	//	//AllowMethods: []string{"*"}, // , "HEAD", "CONNECT", "TRACE", "PATCH"
-	//	//AllowHeaders: []string{"*"},
-	//}))
 
-	r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"http://localhost:3000"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // , "HEAD", "CONNECT", "TRACE", "PATCH"
+		AllowHeaders: []string{"Authorization", "Origin", "Content-Type", "Accept", "Referer"},
+		//ExposeHeaders:    []string{"Content-Length"},
+		//AllowCredentials: true,
+	}))
 
 	r.Use(sentrygin.New(sentrygin.Options{}))
 	r.Use(apiV1.SetService(svc, apiConfig))
