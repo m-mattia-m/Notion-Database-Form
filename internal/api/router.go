@@ -1,9 +1,11 @@
 package api
 
 import (
+	"Notion-Forms/docs"
 	apiV1 "Notion-Forms/internal/api/v1"
 	"Notion-Forms/internal/service"
 	"fmt"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -19,22 +21,28 @@ func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 		fmt.Println(fmt.Sprintf("[Swagger]: %s/api/v1/swagger/index.html", apiConfig.Host))
 	}
 
-	//docs.SwaggerInfo.Schemes = []string{apiConfig.Schemas}
-	//docs.SwaggerInfo.Host = fmt.Sprintf("%s:%d", apiConfig.Domain, apiConfig.Port)
-	//docs.SwaggerInfo.BasePath = "/api/v1"
+	docs.SwaggerInfo.Schemes = []string{apiConfig.Schemas}
+	docs.SwaggerInfo.Host = fmt.Sprintf("%s:%d", apiConfig.Domain, apiConfig.Port)
+	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	r := gin.Default()
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Authorization", "Origin", "Content-Type", "Accept"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-	}))
+	//r.Use(cors.New(cors.Config{
+	//	AllowOrigins: []string{"http://localhost:3000"},
+	//	AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // , "HEAD", "CONNECT", "TRACE", "PATCH"
+	//	AllowHeaders: []string{"Authorization", "Origin", "Content-Type", "Accept"},
+	//	//ExposeHeaders:    []string{"Content-Length"},
+	//	//AllowCredentials: true,
+	//
+	//	//AllowOrigins: []string{"*"},
+	//	//AllowMethods: []string{"*"}, // , "HEAD", "CONNECT", "TRACE", "PATCH"
+	//	//AllowHeaders: []string{"*"},
+	//}))
 
-	//r.Use(sentrygin.New(sentrygin.Options{}))
-	//r.Use(apiV1.SetService(svc, apiConfig))
-	//r.Use(apiV1.SetApiConfig(apiConfig))
+	r.Use(cors.Default())
+
+	r.Use(sentrygin.New(sentrygin.Options{}))
+	r.Use(apiV1.SetService(svc, apiConfig))
+	r.Use(apiV1.SetApiConfig(apiConfig))
 
 	//r.GET("/api/v1/notion", func(c *gin.Context) {
 	//	c.JSON(http.StatusOK, "👋 OK")
@@ -77,6 +85,15 @@ func Router(svc service.Service, apiConfig apiV1.ApiConfig) error {
 				//notionDatabases.DELETE("/cache", apiV1.DeleteDatabaseListFromCache)
 				//notionDatabases.DELETE("/:id/cache", apiV1.DeleteDatabaseFromCache)
 			}
+		}
+		formGroup := v1.Group("/form", Authenticate)
+		{
+			// TODO: add form-config and save this in the db -> form-url, other form-settings/config
+			formGroup.POST("", apiV1.CreateForm)
+			formGroup.GET("", apiV1.ListForm)
+			formGroup.GET(":databaseId", apiV1.GetForm)
+			formGroup.PUT(":databaseId", apiV1.UpdateForm)
+			formGroup.DELETE(":databaseId", apiV1.DeleteForm)
 		}
 		storageGroup := v1.Group("/storage", Authenticate)
 		{

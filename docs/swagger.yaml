@@ -14,6 +14,36 @@ definitions:
       url:
         type: string
     type: object
+  model.FormRequest:
+    properties:
+      database_id:
+        type: string
+      overrides:
+        items:
+          $ref: '#/definitions/model.Override'
+        type: array
+      password:
+        type: string
+    type: object
+  model.FormResponse:
+    properties:
+      database_id:
+        type: string
+      iam_user_id:
+        type: string
+      overrides:
+        items:
+          $ref: '#/definitions/model.Override'
+        type: array
+      parent_folder_id:
+        type: string
+      password:
+        type: string
+      storage_provider:
+        type: string
+      url:
+        type: string
+    type: object
   model.HttpError:
     properties:
       message:
@@ -42,6 +72,13 @@ definitions:
       id:
         type: string
       name:
+        type: string
+    type: object
+  model.Override:
+    properties:
+      column_id:
+        type: string
+      new_property_type:
         type: string
     type: object
   model.RecordRequest:
@@ -443,6 +480,177 @@ info:
   title: Generated Notion Forms
   version: "1.0"
 paths:
+  /form:
+    get:
+      consumes:
+      - application/json
+      description: List all own forms
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.FormResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Form
+    post:
+      consumes:
+      - application/json
+      description: Create a new form
+      parameters:
+      - description: FormRequest
+        in: body
+        name: FormRequest
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.FormResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Form
+  /form/{databaseId}:
+    get:
+      consumes:
+      - application/json
+      description: Get a specific form by id
+      parameters:
+      - description: databaseId
+        in: path
+        name: databaseId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.FormResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Form
+  /form/{formId}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a specific form by id
+      parameters:
+      - description: formId
+        in: path
+        name: formId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.FormResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Form
+    put:
+      consumes:
+      - application/json
+      description: Update a specific form by id
+      parameters:
+      - description: formId
+        in: path
+        name: formId
+        required: true
+        type: string
+      - description: FormRequest
+        in: body
+        name: FormRequest
+        required: true
+        schema:
+          $ref: '#/definitions/model.FormRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.FormResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.HttpError'
+      security:
+      - Bearer: []
+      tags:
+      - Form
   /notion/authenticate:
     post:
       consumes:
@@ -763,7 +971,7 @@ paths:
       - Bearer: []
       tags:
       - Notion
-  /storage//authenticate/google:
+  /storage/authenticate/google:
     post:
       consumes:
       - application/json

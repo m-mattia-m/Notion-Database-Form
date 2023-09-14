@@ -10,8 +10,9 @@ import (
 
 func (svc *Dao) SetProvider(databaseId string, provider model.StorageProvider) error {
 	filter := bson.M{"databaseid": databaseId}
-	var formsStorage model.Storage
-	err := svc.engine.Database(svc.dbName).Collection("forms").FindOne(context.Background(), filter).Decode(&formsStorage)
+	var form model.Form
+	//var formsStorage model.Storage
+	err := svc.engine.Database(svc.dbName).Collection("forms").FindOne(context.Background(), filter).Decode(&form)
 	// Error which is not a NotFound error
 	if err != nil && err != mongo.ErrNoDocuments {
 		return err
@@ -19,21 +20,21 @@ func (svc *Dao) SetProvider(databaseId string, provider model.StorageProvider) e
 
 	// All Errors except NotFound were filtered -> therefore NotFound-Error
 	if err != nil {
-		formsStorage.DatabaseId = databaseId
+		form.DatabaseId = databaseId
 	}
 
-	formsStorage.StorageProvider = provider
+	form.StorageProvider = provider
 
 	// If the record was found and no error occurs
 	if err == nil {
-		_, err = svc.engine.Database(svc.dbName).Collection("forms").UpdateOne(context.Background(), filter, bson.M{"$set": formsStorage})
+		_, err = svc.engine.Database(svc.dbName).Collection("forms").UpdateOne(context.Background(), filter, bson.M{"$set": form})
 		if err != nil {
 			return err
 		}
 	}
 	// All Errors except NotFound were filtered -> therefore NotFound-Error
 	if err != nil {
-		_, err = svc.engine.Database(svc.dbName).Collection("forms").InsertOne(context.Background(), formsStorage)
+		_, err = svc.engine.Database(svc.dbName).Collection("forms").InsertOne(context.Background(), form)
 		if err != nil {
 
 		}
@@ -44,8 +45,8 @@ func (svc *Dao) SetProvider(databaseId string, provider model.StorageProvider) e
 
 func (svc *Dao) SetLocation(databaseId, folderId string) error {
 	filter := bson.M{"databaseid": databaseId}
-	var formsStorage model.Storage
-	err := svc.engine.Database(svc.dbName).Collection("forms").FindOne(context.Background(), filter).Decode(&formsStorage)
+	var form model.Form
+	err := svc.engine.Database(svc.dbName).Collection("forms").FindOne(context.Background(), filter).Decode(&form)
 	// Error which is not a NotFound error
 	if err != nil && err != mongo.ErrNoDocuments {
 		return err
@@ -53,21 +54,21 @@ func (svc *Dao) SetLocation(databaseId, folderId string) error {
 
 	// All Errors except NotFound were filtered -> therefore NotFound-Error
 	if err != nil {
-		formsStorage.DatabaseId = databaseId
+		form.DatabaseId = databaseId
 	}
 
-	formsStorage.ParentFolderId = folderId
+	form.ParentFolderId = folderId
 
 	// If the record was found and no error occurs
 	if err == nil {
-		_, err = svc.engine.Database(svc.dbName).Collection("forms").UpdateOne(context.Background(), filter, bson.M{"$set": formsStorage})
+		_, err = svc.engine.Database(svc.dbName).Collection("forms").UpdateOne(context.Background(), filter, bson.M{"$set": form})
 		if err != nil {
 			return err
 		}
 	}
 	// All Errors except NotFound were filtered -> therefore NotFound-Error
 	if err != nil {
-		_, err = svc.engine.Database(svc.dbName).Collection("forms").InsertOne(context.Background(), formsStorage)
+		_, err = svc.engine.Database(svc.dbName).Collection("forms").InsertOne(context.Background(), form)
 		if err != nil {
 
 		}

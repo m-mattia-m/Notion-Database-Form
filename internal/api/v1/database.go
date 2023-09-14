@@ -16,10 +16,10 @@ import (
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
-// @Success      			200  {object} []model.MinimalistDatabase
-// @Failure      			400  {object} model.HttpError
-// @Failure      			404  {object} model.HttpError
-// @Failure      			500  {object} model.HttpError
+// @Success      			200  		{object} 	[]model.MinimalistDatabase
+// @Failure      			400  		{object} 	model.HttpError
+// @Failure      			404  		{object} 	model.HttpError
+// @Failure      			500  		{object} 	model.HttpError
 func ListDatabases(c *gin.Context) {
 	svc, _, _, err := getConfigAndService(c)
 	// TODO: create an emergency log client which is controlled by eventbus in case the config or the service cannot be loaded correctly.

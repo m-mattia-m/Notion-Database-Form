@@ -9,7 +9,6 @@ func (sp *StorageProvider) ToString() string {
 }
 
 type Storage struct {
-	DatabaseId      string          `json:"database_id"`
 	StorageProvider StorageProvider `json:"storage_provider"`
 	ParentFolderId  string          `json:"parent_folder_id"`
 }

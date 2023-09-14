@@ -44,6 +44,11 @@ type Service interface {
 	ListAllSelectOptions(databaseId string) ([]notionModel.Select, error)
 	GetPage(id string) (notionapi.Page, error)
 	ListPages() ([]*notionapi.Page, error)
+	CreateFormToDatabase(oidcUser model.OidcUser, formRequestBody model.FormRequest) (*model.Form, error)
+	ListForms(oidcUser model.OidcUser) ([]model.Form, error)
+	GetFormById(databaseId string, oidcUser model.OidcUser) (*model.Form, error)
+	UpdateFormById(formRequestBody model.FormRequest, oidcUser model.OidcUser) (*model.Form, error)
+	DeleteFormById(databaseId string, oidcUser model.OidcUser) error
 }
 
 type Db struct {

@@ -12,7 +12,7 @@ import (
 // @title           		AuthenticateGoogleDrive
 // @description     		Authenticate in Google Drive with the OAuth code and store the secret together with the IAM, Notion user and Google user
 // @Tags 					Storage
-// @Router  				/storage//authenticate/google [post]
+// @Router  				/storage/authenticate/google [post]
 // @Accept 					json
 // @Produce					json
 // @Security				Bearer
